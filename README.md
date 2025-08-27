@@ -196,6 +196,9 @@ A_u,B_u,T7_reporter_MEFL
 150,75,350
 ...
 ```
+## 📄 License
+
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
 
 ## 🤝 贡献
 
