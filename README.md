@@ -1,187 +1,198 @@
-# iGEM AND门 → 谷氨酸 → 铁死亡建模工具包 (改良版)
 
-这个工具包为您提供完整的建模框架，用于分析环境响应的AND逻辑门控制的谷氨酸生产系统。
+# iGEM AND 门 -> 谷氨酸 -> 铁死亡建模工具包（改良版）
 
-## 🌟 改良特性
+本工具包提供从启动子拟合、AND 门建模、TX-TL 到组织扩散与全身血浆评估的一体化建模流程。默认导出图表（PNG）与数据表（CSV）。
 
-- **增强的数据验证**: 自动检查数据质量和参数合理性
-- **改进的拟合算法**: 使用约束优化和多种评估指标
-- **可视化增强**: 生成高质量的分析图表
-- **错误处理**: 完善的异常处理和用户友好的错误信息
-- **模块化设计**: 面向对象的模型设计，易于扩展
-- **敏感性分析**: 自动进行参数敏感性分析
-- **批量运行**: 一键运行所有分析流程
+## 改良特性
 
-## 📋 系统要求
+- 数据验证：检查数据完整性与参数范围
+- 拟合改进：约束优化，多指标评估（R2、AIC）
+- 可视化增强：统一风格的高分辨率图表（默认导出）
+- 异常处理：更清晰的错误信息与提示
+- 模块化设计：脚本解耦，易于扩展
+- 敏感性分析：关键参数一键扫描
+- 批量运行：`run_all.py` 串联主要流程
+- 新增 04 扩散-PDE（球对称）
+  - 兼容旧版 Dirichlet 边界（保留原文件名与行为）
+  - 新增 Robin 边界（血管壁交换）
+  - 新增 一室血浆 PK（将边界通量耦合到血浆浓度）
+
+## 系统要求
 
 - Python >= 3.8
-- 推荐使用conda环境
+- 建议使用 conda 虚拟环境
 
-## 🚀 快速开始
+## 快速开始
 
-### 1. 安装依赖
+1) 安装依赖
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. 检查依赖
+2) 检查依赖（可选）
 ```bash
 python run_all.py --check-deps
 ```
 
-### 3. 运行完整分析
+3) 运行完整流程
 ```bash
 python run_all.py
 ```
 
-## 📊 文件结构
+> 所有脚本默认会导出图表（PNG）与数据表（CSV）。
+
+## 目录结构
+
 ```
-📦 iGEM AND门建模工具包/
-├── 🐍 run_all.py                 # 主运行脚本
-├── 📋 requirements.txt           # 依赖包列表
-├── 📖 README.md                  # 项目说明
-├── 🧬 01_promoter_fit.py         # 启动子传递函数拟合
-├── 🔬 02_splitT7_AND_model.py    # 分裂T7 AND门建模  
-├── ⚗️  03_tx_tl_to_glu.py         # TX-TL谷氨酸生产模拟
-├── 🌊 04_diffusion_pde.py        # 扩散PDE模型
-├── 🔬 05_cobrapy_dfba_template.py # COBRApy动态FBA
-├── 📁 data/                      # 实验数据
-│   ├── pPept_O2_curve.csv       # pPept启动子氧气响应数据
-│   ├── pLR_T_curve.csv          # pL/pR启动子温度响应数据
-│   └── splitT7_scan.csv         # 分裂T7扫描数据
-└── 📁 params/                    # 模型参数 (自动生成)
-    ├── promoters.json           # 启动子参数
-    └── splitT7.json            # 分裂T7参数
+iGEM-AND-GLU-Toolkit/
+├── run_all.py                   # 主运行脚本
+├── requirements.txt             # 依赖
+├── README.md                    # 说明文档（本文件）
+├── 01_promoter_fit.py           # 启动子传递函数拟合
+├── 02_splitT7_AND_model.py      # 分裂 T7 AND 门建模
+├── 03_tx_tl_to_glu.py           # TX-TL -> 谷氨酸生产
+├── 04_diffusion_pde.py          # 组织扩散 PDE（新增 Robin/PK）
+├── 05_cobrapy_dfba_template.py  # 动态 FBA（模板）
+├── data/
+│   ├── pPept_O2_curve.csv
+│   ├── pLR_T_curve.csv
+│   └── splitT7_scan.csv
+└── params/                      # 自动生成
+    ├── promoters.json
+    └── splitT7.json
 ```
 
-## 🔬 模型详解
+## 模型详解
 
-### 1. 启动子传递函数拟合 (`01_promoter_fit.py`)
+### 1) 启动子传递函数拟合（01_promoter_fit.py）
+功能：使用 Hill 方程拟合启动子响应  
+特性：激活/抑制自动选择，参数约束，R2/AIC，可视化，数据校验  
+输出：`params/promoters.json`，`promoter_fits.png`
 
-**功能**: 使用Hill方程拟合启动子响应曲线
+### 2) 分裂 T7 AND 门建模（02_splitT7_AND_model.py）
+功能：两输入整合，建模 AND 门输出  
+特性：scipy 优化，3D 响应面，可选敏感性分析  
+输出：`params/splitT7.json`，`splitT7_fit.png`
 
-**改良特性**:
-- 自动模型选择（激活型/抑制型）
-- 参数约束优化
-- 拟合质量评估（R²、AIC）
-- 高质量可视化
-- 数据验证和错误处理
+### 3) TX-TL -> 谷氨酸生产（03_tx_tl_to_glu.py）
+功能：从 T7 活性到谷氨酸分泌的 ODE  
+特性：面向对象，odeint 求解，多条件比较，敏感性分析  
+输出：`tx_tl_glu_dynamics.png`，`glu_comparison.png`，`parameter_sensitivity.png`
 
-**输出**:
-- `params/promoters.json`: 拟合参数
-- `promoter_fits.png`: 拟合结果图
+### 4) 组织扩散 PDE（04_diffusion_pde.py）
 
-### 2. 分裂T7 AND门建模 (`02_splitT7_AND_model.py`)
+作用：在球对称几何中模拟谷氨酸在组织内的扩散-反应，并评估向血液侧的交换及血浆浓度上升的可能性。
 
-**功能**: 整合两个环境输入，建模分裂T7 RNA聚合酶活性
+一次运行自动输出三套情景（脚本始终出图）：
+1. legacy（兼容旧版）：`spheroid_glu_profile.csv/.png`
+2. robin：`spheroid_glu_profile_robin.csv/.png`，`boundary_flux_into_blood.csv/.png`
+3. robin_pk：`spheroid_glu_profile_robin_pk.csv/.png`，`boundary_flux_into_blood_robin_pk.csv/.png`，`plasma_concentration.csv/.png`
 
-**改良特性**:
-- 基于scipy的优化算法
-- 3D响应面可视化
-- AND逻辑门验证
-- 参数敏感性分析
+兼容性：legacy 情景沿用旧文件名，保证不影响既有下游流程；Robin/PK 的结果为新增文件。
 
-**输出**:
-- `params/splitT7.json`: AND门参数
-- `splitT7_fit.png`: 拟合和响应曲线
+#### 04 方程（ASCII 版本，无数学扩展）
 
-### 3. TX-TL谷氨酸生产模拟 (`03_tx_tl_to_glu.py`)
+```
+# In-tissue PDE (spherical symmetry)
+dC/dt = D*(d2C/dr2 + 2/r * dC/dr) - kdeg*C + q_glu * rho_bac(r)
 
-**功能**: 从T7活性到谷氨酸生产的完整动力学模拟
+# Boundary conditions
+Legacy (Dirichlet):  C(R) = 0
+Robin (exchange):    -D * (dC/dr at r=R) = h * ( C(R) - C_plasma )
 
-**改良特性**:
-- 面向对象的模型设计
-- 使用scipy.integrate.odeint求解ODE
-- 多条件比较分析
-- 参数敏感性分析
-- 动力学可视化
+# Plasma one-compartment PK
+dC_plasma/dt = Rin(t)/Vd - (ln(2)/t_half) * C_plasma
 
-**输出**:
-- `tx_tl_glu_dynamics.png`: 动力学曲线
-- `glu_comparison.png`: 条件比较
-- `parameter_sensitivity.png`: 敏感性分析
+# Biot number (diagnostic)
+Bi = h * R / D
+```
 
-## 📈 使用示例
+#### 04 常用命令
 
-### 单独运行脚本
 ```bash
-# 拟合启动子响应
+# 基线（默认参数，三情景一起生成）
+python 04_diffusion_pde.py
+
+# 用“24 h 上清 37.5 mM”来标定源强（保守上限），并指定 Robin/PK 参数
+python 04_diffusion_pde.py --calibrate-total-mM 37.5 --calibrate-duration-h 24 \
+  --h 0.001 --Vd-L 5 --t-half-s 1800 --plasma-baseline-mM 0.08
+
+# 简单敏感性（扫描 h）
+for H in 0.0001 0.001 0.01; do python 04_diffusion_pde.py --h $H; done
+```
+
+#### 04 关键参数与默认值（表格为纯 Markdown）
+
+| 参数 | 单位 | 默认 | 说明 |
+|---|---:|---:|---|
+| --D | mm^2/s | 5e-6 | 有效扩散系数（介质/组织；建议做 2~5x 灵敏度） |
+| --kdeg | 1/s | 0.0 | 一阶摄取/降解；未知时置 0 做上限 |
+| --R | mm | 0.5 | 球半径 |
+| --Nr | - | 200 | 径向网格数 |
+| --T-h | h | 6.0 | 总时长 |
+| --q-glu | mM/s/密度 | 1e-7 | 源强；或用“标定”自动给出 |
+| --core-frac | - | 0.4 | 核心半径占比（rho_bac(r) 形状） |
+| --core-density | - | 1.0 | 核心密度系数 |
+| --shell-density | - | 0.2 | 外壳密度系数 |
+| --h | mm/s | 1e-3 | Robin 质传系数（交换效率） |
+| --Vd-L | L | 5.0 | 分布容积（按物种/体重） |
+| --t-half-s | s | 1800 | 血浆半衰期 |
+| --plasma-baseline-mM | mM | 0.0 | 血浆基线（可设 0.05~0.1 mM） |
+| --calibrate-total-mM / --calibrate-duration-h | - | - | 用“总体浓度增长”标定 q_glu（例：24 h -> 37.5 mM） |
+
+> 说明：需要实验/文献支撑的参数在代码中均以注释 “TODO(需实验数据)” 标注；可通过命令行覆盖默认值。
+
+## 使用示例
+
+```bash
+# 启动子拟合
 python 01_promoter_fit.py
 
-# 建模AND门
-python 02_splitT7_AND_model.py  
+# AND 门
+python 02_splitT7_AND_model.py
 
-# 模拟谷氨酸生产
+# TX-TL -> 谷氨酸
 python 03_tx_tl_to_glu.py
+
+# 组织扩散（自动三情景 + 始终出图）
+python 04_diffusion_pde.py
 ```
 
-### 自定义参数
+代码中自定义（示例）：
 ```python
 from tx_tl_to_glu import TxTlGluModel
-
-# 创建自定义模型
-model = TxTlGluModel(
-    k_tx=2.0,      # 提高转录速率
-    kcat_gdh=15.0, # 提高酶活性
-    k_sec=0.1      # 提高分泌效率
-)
-
-# 运行模拟
+model = TxTlGluModel(k_tx=2.0, kcat_gdh=15.0, k_sec=0.1)
 t, m, E, C = model.simulate(O2_percent=0.5, Temp_C=42.0)
 ```
 
-## 🔧 故障排除
+## 故障排除
 
-### 常见问题
-
-1. **依赖包缺失**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **数据文件缺失**
-   - 确保`data/`目录包含所需CSV文件
-   - 检查文件格式是否正确
-
-3. **拟合失败**
-   - 检查数据质量（是否有足够数据点）
-   - 验证数据范围的合理性
-
-4. **图像显示问题**
-   ```bash
-   # 在服务器环境中
-   export MPLBACKEND=Agg
-   ```
-
-## 📚 扩展功能
-
-### 添加新的启动子
-在`01_promoter_fit.py`中添加新的数据加载和拟合代码：
-
-```python
-# 加载新启动子数据
-new_promoter_df = pd.read_csv("data/new_promoter_curve.csv")
-new_promoter_mean = new_promoter_df.groupby("input_var")["output_var"].mean()
-
-# 拟合
-new_params, _ = fit_curve(new_promoter_mean, "input_var", "output_var")
+1) 依赖缺失  
+```
+pip install -r requirements.txt
 ```
 
-### 修改动力学参数
-```python
-# 在TxTlGluModel中修改默认参数
-model = TxTlGluModel(
-    k_tx=1.5,      # 转录速率
-    k_tl=2.0,      # 翻译速率  
-    kcat_gdh=20.0, # 酶催化常数
-    # ... 其他参数
-)
+2) 数据文件缺失  
+- 确认 data/ 中 CSV 是否齐全，列名正确
+
+3) 拟合失败  
+- 检查数据点数量与范围；去除异常点后重试
+
+4) 图像显示问题（服务器环境）  
+```
+export MPLBACKEND=Agg
 ```
 
-## 📄 数据格式
+## 扩展
 
-### pPept_O2_curve.csv
-```csv
+- 添加新启动子：在 `01_promoter_fit.py` 中加载新 CSV，加入拟合与可视化
+- 修改 TX-TL 动力学参数：在 `TxTlGluModel` 构造函数中传入自定义参数
+- PDE 的空间分布：修改 `rho_bac_profile(...)` 或其三个标量参数（核心/外壳）
+
+## 数据格式示例
+
+pPept_O2_curve.csv
+```
 O2_percent,reporter_MEFL,replicate_id
 0.0,1000,1
 0.5,800,1
@@ -189,27 +200,30 @@ O2_percent,reporter_MEFL,replicate_id
 ...
 ```
 
-### splitT7_scan.csv  
-```csv
+splitT7_scan.csv
+```
 A_u,B_u,T7_reporter_MEFL
 100,50,200
 150,75,350
 ...
 ```
-## 📄 License
 
-This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
+## License
 
-## 🤝 贡献
+Apache License 2.0。详见 LICENSE 文件。
 
-欢迎提交Issue和Pull Request来改进这个工具包！
+## 贡献
 
-## 📞 支持
+欢迎提交 Issue 和 Pull Request。
 
-如有问题，请查看：
-1. 本README的故障排除部分
-2. 代码注释和文档字符串
-3. 提交Issue到项目仓库
+## 支持
 
----
-*这个工具包专为iGEM团队设计，用于合成生物学系统的建模和分析。*
+遇到问题请先查看：
+1) 本 README 的“故障排除”和“04 参数表”  
+2) 代码中的注释与文档字符串  
+3) 项目仓库的 Issue 区
+
+--- 
+
+备注：本 README 采用纯 ASCII 与基础 Markdown，不依赖 LaTeX/MathJax。
+
