@@ -1,4 +1,4 @@
-# Team TeamName Software Tool
+# Team CUHK-Shenzhen 2025 Software Tool
 
 If your team competes in the [**Software & AI** village](https://villages.igem.org) or wants to
 apply for the [**Best Software Tool** prize](https://competition.igem.org/judging/special-prizes), you **MUST** host all the
