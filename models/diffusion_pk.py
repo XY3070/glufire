@@ -134,9 +134,12 @@ class TumorDiffusion:
         C[-1, :] = C_boundary
         
         # 构建有限差分矩阵
+        # 对于 spdiags，所有对角线数组必须具有相同长度
         A_diag = np.ones(self.Nx) * (1 + 2 * self.D * dt / self.dx**2 + self.k_uptake * dt)
-        A_upper = np.ones(self.Nx - 1) * (-self.D * dt / self.dx**2)
-        A_lower = np.ones(self.Nx - 1) * (-self.D * dt / self.dx**2)
+        A_upper = np.zeros(self.Nx)
+        A_upper[:-1] = -self.D * dt / self.dx**2
+        A_lower = np.zeros(self.Nx)
+        A_lower[1:] = -self.D * dt / self.dx**2
         
         A = spdiags([A_lower, A_diag, A_upper], [-1, 0, 1], self.Nx, self.Nx, format='csc')
         
