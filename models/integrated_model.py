@@ -56,7 +56,7 @@ class IntegratedTherapyModel:
         
         # 铁死亡参数 - 强效铁死亡以确保治疗效果显著
         self.k_ferroptosis_max = params.get('k_ferroptosis_max', 15.0) # 进一步提高最大铁死亡速率
-        self.K_glu = params.get('K_glu', 0.5) # 大幅降低谷氨酸阈值，使铁死亡更敏感
+        self.K_glu = params.get('K_glu', 30.0) # 设置谷氨酸铁死亡阈值为30mM
         self.n_glu = params.get('n_glu', 5.0) # 进一步增加Hill系数，增强开关效应
 
         # 工程细胞生长参数
