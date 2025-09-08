@@ -40,21 +40,30 @@
 ##  快速开始
 
 ### 1. 安装依赖
+
+本项目使用 uv 管理依赖。  
+
+安装 uv:
+
 ```bash
-pip install numpy scipy matplotlib seaborn
+curl -
+```
+
+```bash
+uv sync
 ```
 
 ### 2. 运行完整分析
 执行主分析脚本，生成所有核心模型的模拟和分析图表：
 ```bash
-python run_analysis.py
+uv run run_analysis.py
 ```
 分析结果图表将保存在 `results/` 目录下。
 
 ### 3. 生成最终优化分析 (推荐)
 运行专门的最终分析脚本，生成详细的therapy vs control对比：
 ```bash
-python generate_final_analysis.py
+uv run generate_final_analysis.py
 ```
 
 ## 📊 文件结构
