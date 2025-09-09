@@ -26,12 +26,10 @@ plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'DejaVu Sans']  
 plt.rcParams['axes.unicode_minus'] = False  # 正常显示负号
 
 # 导入新的模块化模型
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).parent / "models"))
-from and_gate import SimpleANDGate
-from glu_metabolism import GluMetabolismModel
-from integrated_model import IntegratedTherapyModel
+
+from models.and_gate import SimpleANDGate
+from models.glu_metabolism import GluMetabolismModel
+from models.integrated_model import IntegratedTherapyModel
 
 # 设置全局绘图样式和输出目录
 plt.style.use('seaborn-v0_8-whitegrid')
@@ -122,11 +120,11 @@ def run_integrated_therapy_analysis():
     
     # --- 条件1: 治疗开启 (低氧, 高温) ---
     env_therapy = {'O2_percent': 1.0, 'Temp_C': 42.0}
-    t_therapy, sol_therapy = model.simulate(env_therapy, t_end=100)
+    t_therapy, sol_therapy = model.simulate(env_therapy, t_end=100, with_neurotox=False)[:2]
     
     # --- 条件2: 对照组 (正常氧, 正常体温) ---
     env_control = {'O2_percent': 5.0, 'Temp_C': 37.0}
-    t_control, sol_control = model.simulate(env_control, t_end=100)
+    t_control, sol_control = model.simulate(env_control, t_end=100, with_neurotox=False)[:2]
     
     # --- 绘图比较 ---
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(21, 6))

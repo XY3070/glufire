@@ -1,0 +1,2 @@
+Therapy: max 104.240 uM at 1.00 h
+Control: max 101.583 uM at 1.00 h
