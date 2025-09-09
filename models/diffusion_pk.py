@@ -153,6 +153,80 @@ class TumorDiffusion:
             C[:, n+1] = spsolve(A, b)
             
         return self.dx * np.arange(self.Nx), t, C
+ # === Adapter: map Glu_extra(t) -> tumor secretion flux S_t(t) and run neurotox PK ===
+
+def _finite_diff_flux_from_conc(
+    t_h: np.ndarray,
+    glu_extra_mM: np.ndarray,
+    V_tumor_ext_L: float,
+    clip_nonneg: bool = True,
+) -> np.ndarray:
+    """
+    把细胞外浓度时序 C_extra(t) 转成肿瘤室分泌通量 S_t(t)（μmol/h）：
+        S_t(t) ≈ d/dt [ C_extra(t) [mM] * V_ext [L] ] * 1000
+    说明：
+    - 这里 V_ext 视作常数，所以 d/dt(C*V) = V * dC/dt。
+    - 默认只保留“净外排”为正的部分（clip_nonneg=True），即负值截断为0。
+      如果你想保留双向通量，把 clip_nonneg 设为 False。
+    """
+    t_h = np.asarray(t_h, dtype=float)
+    c_mM = np.asarray(glu_extra_mM, dtype=float)
+
+    # 数值微分（单位：mM/h）
+    dc_dt_mM_per_h = np.gradient(c_mM, t_h, edge_order=2)
+
+    # mM * L = mmol  -> ×1000 变成 μmol
+    umol_per_h = 1000.0 * V_tumor_ext_L * dc_dt_mM_per_h
+
+    return np.clip(umol_per_h, 0.0, None) if clip_nonneg else umol_per_h
+
+
+def run_neurotox_from_glu_timeseries(
+    t_h: np.ndarray,
+    glu_extra_mM: np.ndarray,
+    V_tumor_ext_L: float,
+    pk_params=None,
+    tox_thr=None,
+    baseline_uM: float = 50.0,
+):
+    """
+    用 Glu_extra(t) 推导分泌通量 S_t(t)，驱动三室 PK，并评估神经毒性。
+    返回 dict:
+      {
+        't_h','S_t_umol_per_h','Cb_uM','Ct_uM','Cn_uM','tox_report'
+      }
+    """
+    # 在包内使用相对导入；保持函数内导入，避免该文件单独作为脚本运行时出错
+    from .pk_toxicity import (
+        PKParams, ToxicityThresholds,
+        simulate_three_comp_pk, assess_neurotoxicity
+    )
+
+    pk_params = pk_params or PKParams()
+    tox_thr   = tox_thr   or ToxicityThresholds()
+
+    # 由浓度时序得到肿瘤室分泌通量（μmol/h）
+    S_t = _finite_diff_flux_from_conc(t_h, glu_extra_mM, V_tumor_ext_L, clip_nonneg=True)
+
+    # 三室 PK（给三个室一个生理基线浓度，单位 μM）
+    Cb_uM, Ct_uM, Cn_uM = simulate_three_comp_pk(
+        t_grid_h=t_h,
+        S_t_umol_per_h=S_t,
+        params=pk_params,
+        Cb0_uM=baseline_uM, Ct0_uM=baseline_uM, Cn0_uM=baseline_uM
+    )
+
+    report = assess_neurotoxicity(Cb_uM, t_h, tox_thr)
+
+    return {
+        "t_h": t_h,
+        "S_t_umol_per_h": S_t,
+        "Cb_uM": Cb_uM,
+        "Ct_uM": Ct_uM,
+        "Cn_uM": Cn_uM,
+        "tox_report": report,
+    }
+   
 
 # --- 示例 ---
 if __name__ == '__main__':
