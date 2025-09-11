@@ -75,6 +75,7 @@ class ConfigManager:
     def get_params(self, module_name):
         return self.config.get(module_name, {})
 
+
 # 示例用法
 if __name__ == '__main__':
     config_manager = ConfigManager()
