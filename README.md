@@ -47,7 +47,19 @@
 安装 uv:
 
 ```bash
-curl -
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+或者使用 wget:  
+
+```bash
+wget -qO- https://astral.sh/uv/install.sh | sh
+```
+
+当然，也可以是使用 pip:  
+
+```bash
+pip install uv
 ```
 
 ```bash
