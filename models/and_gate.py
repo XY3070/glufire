@@ -17,26 +17,27 @@ import json
 from pathlib import Path
 import numpy as np
 from scipy.integrate import odeint
+import sys
+import os
+
+# add the project root directory to the Python module search path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_dir, '..'))
+sys.path.insert(0, project_root)
+
+from config_manager import ConfigManager # 导入ConfigManager
 
 # ------------------------------------------------------------------
 # 参数加载
 # ------------------------------------------------------------------
-def load_model_parameters(promoter_params_path="params/promoters.json", splitT7_params_path="params/splitT7.json"):
-    base_path = Path(__file__).resolve().parents[1]
-    # 启动子参数
-    try:
-        with open(base_path / promoter_params_path, 'r', encoding='utf-8') as f:
-            promoter_params = json.load(f)
-    except Exception:
-        # 默认: pPept 为低氧诱导 (repressor of O2), pLR 为高温激活
-        promoter_params = {
-            "pPept": {"type": "rep", "beta": 1200.0, "K": 5.0, "n": 2.0, "leaky": 50.0},  # K=5% O2
-            "pLR":   {"type": "act", "beta": 1500.0, "K": 40.0, "n": 8.0,  "leaky": 80.0}  # 阈值 40°C
-        }
+def load_model_parameters():
+    config_manager = ConfigManager()
+    and_gate_params = config_manager.get_params('and_gate')
+    promoter_params = and_gate_params.get('promoter_params', {})
+    splitT7_params = and_gate_params.get('splitT7_params', {})
 
     # 统一各启动子 mode/type 字段
     for name, p in promoter_params.items():
-        # 优先已有规范 'type'
         mode = p.get('type') or p.get('_mode') or p.get('mode')
         if mode:
             mode_l = str(mode).lower()
@@ -45,15 +46,7 @@ def load_model_parameters(promoter_params_path="params/promoters.json", splitT7_
             else:
                 p['type'] = 'act'
         else:
-            # 若未提供且名称含有常见抑制关键词，可在此扩展规则。目前默认激活。
             p.setdefault('type', 'act')
-
-    # 分裂 T7 组装参数
-    try:
-        with open(base_path / splitT7_params_path, 'r', encoding='utf-8') as f:
-            splitT7_params = json.load(f)
-    except Exception:
-        splitT7_params = {"alpha": 1.0, "Kd": 2.0e5, "leaky": 200.0}  # Kd 足够大避免早饱和
     return promoter_params, splitT7_params
 
 # ------------------------------------------------------------------
@@ -61,10 +54,10 @@ def load_model_parameters(promoter_params_path="params/promoters.json", splitT7_
 # ------------------------------------------------------------------
 class SimpleANDGate:
     def __init__(self, promoter_params=None, splitT7_params=None):
-        if promoter_params is None or splitT7_params is None:
-            promoter_params, splitT7_params = load_model_parameters()
-        self.promoter_params = promoter_params
-        self.splitT7_params = splitT7_params
+        config_manager = ConfigManager()
+        and_gate_params = config_manager.get_params('and_gate')
+        self.promoter_params = and_gate_params.get('promoter_params', {})
+        self.splitT7_params = and_gate_params.get('splitT7_params', {})
 
     def _hill_function(self, x, params):
         # 支持标量/ndarray
@@ -111,9 +104,11 @@ class SimpleANDGate:
 # ------------------------------------------------------------------
 class BaseDetailedANDGate:
     def __init__(self, **params):
-        self.k_assembly = params.get('k_assembly', 1.0e-6)
-        self.k_disassembly = params.get('k_disassembly', 1e-3)
-        self.k_deg = params.get('k_deg', 0.05)
+        config_manager = ConfigManager()
+        and_gate_params = config_manager.get_params('and_gate')
+        self.k_assembly = and_gate_params.get('k_assembly', 1.0e-6)
+        self.k_disassembly = and_gate_params.get('k_disassembly', 1e-3)
+        self.k_deg = and_gate_params.get('k_deg', 0.05)
         self.simple = SimpleANDGate()
 
     def dydt(self, y, t, O2_percent, Temp_C):

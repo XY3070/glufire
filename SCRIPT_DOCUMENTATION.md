@@ -50,7 +50,7 @@
 ## 2. 模型模块说明
 
 ### 2.1 and_gate.py
-- **模型**: 简单AND门模型
+- **模型**: 简单AND门模型 (已外部化参数)
 - **公式**: Hill函数
   - **激活型**: \( \text{Output} = \text{leaky} + \text{beta} \times \frac{x^n}{K^n + x^n} \)
   - **抑制型**: \( \text{Output} = \text{leaky} + \text{beta} \times \frac{K^n}{K^n + x^n} \)
@@ -58,82 +58,109 @@
 - **输入**: O2% (氧气浓度), 温度 (摄氏度)
 - **输出**: T7活性 (任意单位)
 - **参数**:
-  - **固定参数 (通常无需调整)**:
-    - `promoter_params` (从 `params/promoters.json` 加载):
+  - **所有参数均通过 `ConfigManager` 进行管理和加载。** 默认值在 `config_manager.py` 中定义，并可在需要时通过 JSON 配置文件覆盖。
+  - **关键参数示例 (完整列表请参考 `config_manager.py` 中的 `and_gate` 部分)**:
+    - `promoter_params`:
       - `pPept` (低氧诱导启动子):
         - `type`: 'rep' (抑制型)
-        - `beta`: 最大表达量 (默认1200.0)
-        - `K`: 半数激活/抑制浓度 (默认5.0 %O2)
-        - `n`: Hill系数 (默认2.0)
-        - `leaky`: 基础泄漏表达 (默认50.0)
+        - `beta`: 最大表达量
+        - `K`: 半数激活/抑制浓度
+        - `n`: Hill系数
+        - `leaky`: 基础泄漏表达
       - `pLR` (高温激活启动子):
         - `type`: 'act' (激活型)
-        - `beta`: 最大表达量 (默认1500.0)
-        - `K`: 半数激活/抑制温度 (默认40.0 °C)
-        - `n`: Hill系数 (默认8.0)
-        - `leaky`: 基础泄漏表达 (默认80.0)
-    - `splitT7_params` (从 `params/splitT7.json` 加载):
-      - `alpha`: T7组装效率 (默认1.0)
-      - `Kd`: T7组装的半饱和常数 (默认2.0e5)
-      - `leaky`: T7基础活性 (默认200.0)
+        - `beta`: 最大表达量
+        - `K`: 半数激活/抑制温度
+        - `n`: Hill系数
+        - `leaky`: 基础泄漏表达
+    - `splitT7_params`:
+      - `alpha`: T7组装效率
+      - `Kd`: T7组装的半饱和常数
+      - `leaky`: T7基础活性
+    - `k_assembly`: T7组装速率常数
+    - `k_disassembly`: T7解体速率常数
+    - `k_deg`: T7降解速率常数
   - **辅助方法**:
     - `quick_diagnose()`: 用于快速诊断在典型条件下的表达与T7输出，帮助定位参数问题。
 
 ### 2.2 glu_metabolism.py
-- **模型**: 谷氨酸生产和分泌的ODE模型
+- **模型**: 谷氨酸生产和分泌的ODE模型 (已外部化参数)
 - **公式**: 常微分方程组 (dydt 方法)
-  - \( \frac{dIcd}{dt} = k_{syn\_icd} \times \frac{T7_{activity}^{n_{hill}}}{K_{t7}^{n_{hill}} + T7_{activity}^{n_{hill}}} - k_{deg\_icd} \times Icd \)
-  - \( \frac{dgdhA}{dt} = k_{syn\_gdhA} \times \frac{T7_{activity}^{n_{hill}}}{K_{t7}^{n_{hill}} + T7_{activity}^{n_{hill}}} - k_{deg\_gdhA} \times gdhA \)
-  - \( v_{prod} = Vmax_{gdhA} \times gdhA \)
-  - \( v_{export} = k_{export\_max} \times \frac{Glu_{intra}}{K_{export} + Glu_{intra}} \)
-  - \( \frac{dGlu_{intra}}{dt} = v_{prod} - v_{export} - k_{dilution} \times Glu_{intra} \)
-  - \( \frac{dGlu_{extra}}{dt} = v_{export} \times V_{ratio} - k_{dilution} \times Glu_{extra} \)
-- **输入**: T7聚合酶活性 (AU)
-- **输出**: 细胞内谷氨酸浓度 (Glu_intra), 细胞外谷氨酸浓度 (Glu_extra), Icd表达水平, gdhA表达水平
+  - \( \frac{dGlc_{ext}}{dt} = -V_{max\_glc} \times \frac{Glc_{ext}}{K_{m\_glc} + Glc_{ext}} \times X \)
+  - \( \frac{dNH4_{ext}}{dt} = -V_{max\_glc} \times \frac{Glc_{ext}}{K_{m\_glc} + Glc_{ext}} \times X \times Y_{X/Glc} \times Y_{NH4/X} \)
+  - \( \frac{dICIT}{dt} = (V_{max\_base\_ICD} \times fold_{ICD} \times \frac{Glc_{ext}}{K_{m\_ICD} + Glc_{ext}}) - (V_{max\_base\_GDH} \times fold_{GDH} \times \frac{ICIT}{K_{m\_AKG} + ICIT}) - (k_{PPP} \times ICIT) \)
+  - \( \frac{dAKG}{dt} = (V_{max\_base\_GDH} \times fold_{GDH} \times \frac{ICIT}{K_{m\_AKG} + ICIT}) - (k_{sec\_base} \times AKG) \)
+  - \( \frac{dGlu_{in}}{dt} = (k_{sec\_base} \times AKG) - (k_{export\_base} \times Glu_{in}) - (k_{maintenance} \times Glu_{in}) \)
+  - \( \frac{dNADPH}{dt} = (y_{ICD\_NADPH} \times V_{ICD}) - (\lambda_{NADPH} \times (NADPH - NADPH_{set})) \)
+  - \( \frac{dX}{dt} = \mu_{max} \times \frac{Glc_{ext}}{K_{m\_glc} + Glc_{ext}} \times X \)
+  - \( \frac{dGlu_{ext}}{dt} = (k_{export\_base} \times Glu_{in}) - (extracellular\_clearance\_rate \times Glu_{ext}) \)
+  - \( \frac{dfold_{ICD}}{dt} = \frac{1}{\tau_{enzyme}} \times (\frac{T7_{activity}^{n_{hill}}}{K_{T7}^{n_{hill}} + T7_{activity}^{n_{hill}}} \times fold_{ICD\_max} - fold_{ICD}) \)
+  - \( \frac{dfold_{GDH}}{dt} = \frac{1}{\tau_{enzyme}} \times (\frac{T7_{activity}^{n_{hill}}}{K_{T7}^{n_{hill}} + T7_{activity}^{n_{hill}}} \times fold_{GDH\_max} - fold_{GDH}) \)
+- **输入**: T7聚合酶活性 (AU), 初始状态变量
+- **输出**: 细胞内谷氨酸浓度 (Glu_in), 细胞外谷氨酸浓度 (Glu_ext), 其他状态变量
 - **参数**:
-  - **固定参数 (通常无需调整)**:
-    - `k_prod_max`: 最大谷氨酸生产速率 (mM/hr, 默认 50.0)
-    - `K_t7`: T7活性达到半最大生产速率时的值 (AU, 默认 500.0)
-    - `k_export_max`: 最大谷氨酸分泌速率 (mM/hr, 默认 100.0)
-    - `K_export`: 细胞内谷氨酸浓度达到半最大分泌速率时的值 (mM, 默认 10.0)
-    - `k_dilution`: 稀释/降解速率 (1/hr, 默认 0.1)
-    - `V_intra_over_V_extra` (`V_ratio`): 细胞内总体积与细胞外总体积的比率 (默认 0.01)
-    - `k_syn_icd`: Icd合成速率 (1/hr, 默认 2.0)
-    - `k_syn_gdhA`: gdhA合成速率 (1/hr, 默认 2.0)
-    - `k_deg_icd`: Icd降解速率 (1/hr, 默认 0.2)
-    - `k_deg_gdhA`: gdhA降解速率 (1/hr, 默认 0.2)
-    - `Vmax_icd`: Icd最大催化速率 (mM/hr, 默认 100.0)
-    - `K_icd`: Icd底物常数 (mM, 默认 5.0)
-    - `Vmax_gdhA`: gdhA最大催化速率 (mM/hr, 默认 100.0)
-    - `K_gdhA`: gdhA底物常数 (mM, 默认 5.0)
-    - `n_hill`: Hill系数 (默认 4.0)
+  - **所有参数均通过 `ConfigManager` 进行管理和加载。** 默认值在 `config_manager.py` 中定义，并可在需要时通过 JSON 配置文件覆盖。
+  - **关键参数示例 (完整列表请参考 `config_manager.py` 中的 `glu_metabolism_en` 部分)**:
+    - `V_max_glc`: 最大葡萄糖摄取速率
+    - `K_m_glc`: 葡萄糖米氏常数
+    - `f_TCA`: TCA循环通量比例
+    - `V_max_base_ICD`: 异柠檬酸脱氢酶 (ICD) 基础最大活性
+    - `K_m_ICD`: ICD米氏常数
+    - `V_max_base_GDH`: 谷氨酸脱氢酶 (GDH) 基础最大活性
+    - `K_m_AKG`: α-酮戊二酸米氏常数
+    - `K_m_NH4`: 铵离子米氏常数
+    - `K_m_NADPH`: NADPH米氏常数
+    - `k_PPP`: 磷酸戊糖途径 (PPP) 速率常数
+    - `y_ICD_NADPH`: ICD生产NADPH的产率
+    - `lambda_NADPH`: NADPH稳态调节强度
+    - `NADPH_set`: NADPH设定点
+    - `k_sec_base`: 基础分泌速率常数
+    - `k_maintenance`: 维持代谢速率常数
+    - `mu_max`: 最大比生长速率
+    - `K_T7`: T7活性半饱和常数
+    - `n_hill`: Hill系数
+    - `tau_enzyme`: 酶表达时间常数
+    - `fold_ICD_max`: ICD最大过表达倍数
+    - `fold_GDH_max`: GDH最大过表达倍数
+    - `homeostasis_strength`: 细胞内谷氨酸稳态调节强度
+    - `accum_threshold`: 谷氨酸积累阈值
+    - `export_accum_suppression`: 积累抑制下的谷氨酸输出比例
+    - `postshock_export_boost`: 热激后谷氨酸输出增强因子
+    - `extracellular_clearance_rate`: 细胞外谷氨酸清除率
+    - `export_decay_rate`: 谷氨酸输出衰减率
+    - `Glu_target`: 谷氨酸目标浓度
 
 ### 2.3 diffusion_pk.py
-- **功能**: 提供两种模型来描述治疗药物（如谷氨酸）在体内的分布和扩散：
-  1. MultiCompartmentPK: 一个多室药代动力学(PK)模型，用于模拟药物在全身各主要器官（血液、肝脏、肿瘤等）的分布。基于ODE。
-  2. TumorDiffusion: 一个反应-扩散模型，用于模拟药物在肿瘤微环境(TME)中的空间分布。基于偏微分方程(PDE)。
+- **模型**: 扩散与药代动力学模块 (已外部化参数)
+  1. **MultiCompartmentPK**: 多室药代动力学模型，描述药物在血液、肝脏、肿瘤等室的分布。
+  2. **TumorDiffusion**: 肿瘤微环境中的反应-扩散模型 (1D)，描述药物在肿瘤中的空间分布。
+- **公式**:
+  1. **MultiCompartmentPK**: 常微分方程组 (ODE)
+     - \( \frac{dC_{blood}}{dt} = \frac{Infusion}{V_{blood}} + \sum_{i \neq blood} \frac{q_{i \to blood} C_i - q_{blood \to i} C_{blood}}{V_{blood}} \)
+     - \( \frac{dC_{liver}}{dt} = \frac{q_{blood \to liver} C_{blood} - q_{liver \to blood} C_{liver}}{V_{liver}} - k_{elim,liver} C_{liver} \)
+     - \( \frac{dC_{tumor}}{dt} = \frac{q_{blood \to tumor} C_{blood} - q_{tumor \to blood} C_{tumor}}{V_{tumor}} - k_{uptake,tumor} C_{tumor} \)
+     - \( \frac{dC_{other}}{dt} = \frac{q_{blood \to other} C_{blood} - q_{other \to blood} C_{other}}{V_{other}} \)
+  2. **TumorDiffusion**: 偏微分方程 (PDE)
+     - \( \frac{\partial C}{\partial t} = D \frac{\partial^2 C}{\partial x^2} - k_{uptake} C \)
 - **输入**:
-  - MultiCompartmentPK: 药物输注速率 (`infusion_rate_func`)
-  - TumorDiffusion: 肿瘤边界的药物浓度 (`C_boundary`)
+  1. **MultiCompartmentPK**: 药物输注速率 (infusion_rate_func), 模拟时长 (t_end), 时间步长 (dt)。
+  2. **TumorDiffusion**: 肿瘤边界药物浓度 (C_boundary), 模拟时长 (t_end), 时间步长 (dt)。
 - **输出**:
-  - MultiCompartmentPK: 各室药物浓度随时间的变化
-  - TumorDiffusion: 肿瘤内药物浓度随空间和时间的变化
+  1. **MultiCompartmentPK**: 各室药物浓度随时间的变化。
+  2. **TumorDiffusion**: 肿瘤内药物浓度随空间和时间的变化。
 - **参数**:
-  - **MultiCompartmentPK (多室药代动力学模型)**:
-    - `V_blood`: 血液体积 (L, 默认 5.0)
-    - `V_liver`: 肝脏体积 (L, 默认 1.5)
-    - `V_tumor`: 肿瘤体积 (L, 默认 0.5)
-    - `V_other`: 其他组织体积 (L, 默认 60.0)
-    - `q_blood_liver`: 血液到肝脏的流速 (L/hr, 默认 90.0)
-    - `q_blood_tumor`: 血液到肿瘤的流速 (L/hr, 默认 10.0)
-    - `q_blood_other`: 血液到其他组织的流速 (L/hr, 默认 200.0)
-    - `k_elim_liver`: 药物在肝脏的清除率 (1/hr, 默认 0.5)
-    - `k_uptake_tumor`: 肿瘤摄取率 (1/hr, 默认 0.2)
-  - **TumorDiffusion (肿瘤扩散模型)**:
-    - `D`: 扩散系数 (cm²/hr, 默认 0.01)
-    - `k_uptake`: 肿瘤细胞摄取率 (1/hr, 默认 0.2)
-    - `L`: 肿瘤直径 (cm, 默认 1.0)
-    - `Nx`: 空间网格点数 (默认 50)
+  - **所有参数均通过 `ConfigManager` 进行管理和加载。** 默认值在 `config_manager.py` 中定义，并可在需要时通过 JSON 配置文件覆盖。
+  - **关键参数示例 (完整列表请参考 `config_manager.py` 中的 `diffusion_pk` 部分)**:
+    - **MultiCompartmentPK**:
+      - `V_blood`, `V_liver`, `V_tumor`, `V_other`: 各室体积 (L)
+      - `q_blood_liver`, `q_blood_tumor`, `q_blood_other`: 血液与其他室之间的流速 (L/hr)
+      - `k_elim_liver`: 肝脏清除率 (1/hr)
+      - `k_uptake_tumor`: 肿瘤摄取率 (1/hr)
+    - **TumorDiffusion**:
+      - `D`: 扩散系数 (cm²/hr)
+      - `k_uptake`: 肿瘤细胞摄取率 (1/hr)
+      - `L`: 肿瘤直径 (cm)
+      - `Nx`: 空间网格点数
 
 ### 2.4 integrated_model.py
 - **模型**: 整合的端到端治疗模型

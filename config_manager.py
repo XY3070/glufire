@@ -55,6 +55,38 @@ class ConfigManager:
             'export_decay_rate': 0.8,
             'Glu_target': 20.0
         }
+        # AND门模型参数
+        self.config['and_gate'] = {
+            'promoter_params': {
+                'pPept': {'type': 'rep', 'beta': 1200.0, 'K': 5.0, 'n': 2.0, 'leaky': 50.0},
+                'pLR': {'type': 'act', 'beta': 1500.0, 'K': 40.0, 'n': 8.0, 'leaky': 80.0}
+            },
+            'splitT7_params': {'alpha': 1.0, 'Kd': 2.0e5, 'leaky': 200.0},
+            'k_assembly': 1.0,
+            'k_disassembly': 0.1,
+            'k_deg': 0.05
+        }
+
+        # 扩散与药代动力学模块参数
+        self.config['diffusion_pk'] = {
+            'MultiCompartmentPK': {
+                'V_blood': 5.0,
+                'V_liver': 1.5,
+                'V_tumor': 0.5,
+                'V_other': 60.0,
+                'q_blood_liver': 90.0,
+                'q_blood_tumor': 10.0,
+                'q_blood_other': 200.0,
+                'k_elim_liver': 0.5,
+                'k_uptake_tumor': 0.2
+            },
+            'TumorDiffusion': {
+                'D': 0.01,
+                'k_uptake': 0.2,
+                'L': 1.0,
+                'Nx': 50
+            }
+        }
 
     def load_config_from_json(self, json_path):
         if os.path.exists(json_path):

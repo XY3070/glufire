@@ -17,6 +17,12 @@ import numpy as np
 from scipy.integrate import odeint
 from scipy.sparse import spdiags
 from scipy.sparse.linalg import spsolve
+import sys
+import os
+
+# 将项目根目录添加到 Python 模块搜索路径
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from config_manager import ConfigManager
 
 class MultiCompartmentPK:
     """
@@ -25,33 +31,39 @@ class MultiCompartmentPK:
     该模型将人体简化为几个相互连接的室(compartment)，如血液、肝脏、
     健康组织和肿瘤。它通过ODE描述药物在这些室之间的流动和清除。
     """
-    def __init__(self, **params):
+    def __init__(self, config_manager: ConfigManager = None, **params):
         """
         初始化模型参数。
         
         Parameters:
         -----------
-        q_ij : float
-            从室i到室j的流速。
-        k_elim : float
-            药物在肝脏的清除率。
-        V_i : float
-            室i的体积。
+        config_manager : ConfigManager, optional
+            ConfigManager 实例，用于获取配置参数。如果提供，将从其中加载参数。
+        params : dict
+            直接提供的参数，会覆盖 ConfigManager 中的参数。
         """
+        if config_manager:
+            pk_params = config_manager.get_params('diffusion_pk').get('MultiCompartmentPK', {})
+        else:
+            pk_params = {}
+
+        # 合并直接提供的参数，覆盖 ConfigManager 中的参数
+        pk_params.update(params)
+
         # 体积 (L)
-        self.V_blood = params.get('V_blood', 5.0)
-        self.V_liver = params.get('V_liver', 1.5)
-        self.V_tumor = params.get('V_tumor', 0.5)
-        self.V_other = params.get('V_other', 60.0)
+        self.V_blood = pk_params.get('V_blood', 5.0)
+        self.V_liver = pk_params.get('V_liver', 1.5)
+        self.V_tumor = pk_params.get('V_tumor', 0.5)
+        self.V_other = pk_params.get('V_other', 60.0)
         
         # 流速 (L/hr)
-        self.q_blood_liver = params.get('q_blood_liver', 90.0)
-        self.q_blood_tumor = params.get('q_blood_tumor', 10.0)
-        self.q_blood_other = params.get('q_blood_other', 200.0)
+        self.q_blood_liver = pk_params.get('q_blood_liver', 90.0)
+        self.q_blood_tumor = pk_params.get('q_blood_tumor', 10.0)
+        self.q_blood_other = pk_params.get('q_blood_other', 200.0)
         
         # 清除率 (1/hr)
-        self.k_elim_liver = params.get('k_elim_liver', 0.5)
-        self.k_uptake_tumor = params.get('k_uptake_tumor', 0.2)
+        self.k_elim_liver = pk_params.get('k_elim_liver', 0.5)
+        self.k_uptake_tumor = pk_params.get('k_uptake_tumor', 0.2)
 
     def dydt(self, y, t, infusion_rate):
         """
@@ -110,11 +122,18 @@ class TumorDiffusion:
     
     使用有限差分法求解PDE: ∂C/∂t = D * ∂²C/∂x² - k_uptake * C
     """
-    def __init__(self, **params):
-        self.D = params.get('D', 0.01)  # 扩散系数 (cm²/hr)
-        self.k_uptake = params.get('k_uptake', 0.2) # 肿瘤细胞摄取率 (1/hr)
-        self.L = params.get('L', 1.0) # 肿瘤直径 (cm)
-        self.Nx = params.get('Nx', 50) # 空间网格点数
+    def __init__(self, config_manager: ConfigManager = None, **params):
+        if config_manager:
+            diffusion_params = config_manager.get_params('diffusion_pk').get('TumorDiffusion', {})
+        else:
+            diffusion_params = {}
+        
+        diffusion_params.update(params)
+
+        self.D = diffusion_params.get('D', 0.01)  # 扩散系数 (cm²/hr)
+        self.k_uptake = diffusion_params.get('k_uptake', 0.2) # 肿瘤细胞摄取率 (1/hr)
+        self.L = diffusion_params.get('L', 1.0) # 肿瘤直径 (cm)
+        self.Nx = diffusion_params.get('Nx', 50) # 空间网格点数
         self.dx = self.L / (self.Nx - 1)
 
     def simulate(self, C_boundary, t_end=10.0, dt=0.01):
