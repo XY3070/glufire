@@ -12,15 +12,16 @@
 - 实例化 `IntegratedTherapyModel`。
 - 调用 `simulate` 方法，并提供环境条件字典，以运行模拟。
 """
-import os
+
 import numpy as np
 from scipy.integrate import odeint
 
 # 导入上游模块
-from .and_gate import SimpleANDGate
-from .glu_metabolism import GluMetabolismModel
-from .diffusion_pk import run_neurotox_from_glu_timeseries
-
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent))
+from and_gate import SimpleANDGate
+from glu_metabolism import GluMetabolismModel
 
 class IntegratedTherapyModel:
     """
@@ -55,7 +56,7 @@ class IntegratedTherapyModel:
         
         # 铁死亡参数 - 强效铁死亡以确保治疗效果显著
         self.k_ferroptosis_max = params.get('k_ferroptosis_max', 15.0) # 进一步提高最大铁死亡速率
-        self.K_glu = params.get('K_glu', 30.0) # 设置谷氨酸铁死亡阈值为30mM
+        self.K_glu = params.get('K_glu', 0.5) # 大幅降低谷氨酸阈值，使铁死亡更敏感
         self.n_glu = params.get('n_glu', 5.0) # 进一步增加Hill系数，增强开关效应
 
         # 工程细胞生长参数
@@ -125,36 +126,18 @@ class IntegratedTherapyModel:
         
         return [dN_tumor_dt, dD_tumor_dt, dN_eng_dt, dGlu_intra_dt, dGlu_extra_dt, dIcd_dt, dgdhA_dt]
 
-    def simulate(self, env_conditions, t_end=100.0, dt=0.5, with_neurotox=True):
+    def simulate(self, env_conditions, t_end=100.0, dt=0.5):
         """
         运行整合治疗模拟。
-        如果 with_neurotox=True，则基于 Glu_extra(t) 触发三室PK并评估神经毒性。
-        返回：t, solution, neurotox（当 with_neurotox=False 时，neurotox 为 None）
         """
         t = np.arange(0, t_end, dt)
         # 初始条件: [N_tumor, D_tumor, N_eng, Glu_intra, Glu_extra, Icd, gdhA]
         # 降低初始肿瘤细胞数量，使死亡效应更明显
         y0 = [1e6, 0, 5e5, 0, 0, 0, 0]  # 肿瘤细胞1M，工程细胞0.5M
-
+        
         solution = odeint(self.dydt, y0, t, args=(env_conditions,))
-
-        # === 神经毒性评估（NEW）===
-        neurotox = None
-        if with_neurotox:
-            # y 的第 5 列（索引 4）是 Glu_extra (mM)
-            Glu_extra_mM = solution[:, 4]
-            neurotox = run_neurotox_from_glu_timeseries(
-                t_h=t,
-                glu_extra_mM=Glu_extra_mM,
-                V_tumor_ext_L=self.V_tumor_ext,  # 你在 __init__ 已定义
-                pk_params=None,                  # 如需自定义，传 PKParams(...)
-                tox_thr=None,                    # 如需自定义，传 ToxicityThresholds(...)
-                baseline_uM=50.0                 # 初始基线，可按需调整
-            )
-        # ==========================
-
-        return t, solution, neurotox
-
+        
+        return t, solution
 
 # --- 示例 ---
 if __name__ == '__main__':
@@ -180,59 +163,10 @@ if __name__ == '__main__':
 
     # --- 运行模拟 ---
     print("\n正在运行 '治疗' 条件下的模拟...")
-    t_therapy, sol_therapy, nt_therapy = model.simulate(env_conditions=therapy_conditions, t_end=200, with_neurotox=True)
+    t_therapy, sol_therapy = model.simulate(env_conditions=therapy_conditions, t_end=200)
     print("正在运行 '对照' 条件下的模拟...")
-    t_control,  sol_control,  nt_control  = model.simulate(env_conditions=control_conditions,  t_end=200, with_neurotox=True)
+    t_control, sol_control = model.simulate(env_conditions=control_conditions, t_end=200)
     print("模拟完成。")
-
-    # --- 打印简要神经毒性报告 ---
-    if nt_therapy is not None:
-        print("神经毒性报告(治疗):", nt_therapy["tox_report"])
-    if nt_control is not None:
-        print("神经毒性报告(对照):", nt_control["tox_report"])
-    
-        # --- 画“血浆Glu vs 阈值”图（治疗组）---
-        try:
-            os.makedirs("results", exist_ok=True)
-            t_h = nt_therapy["t_h"]
-            Cb  = nt_therapy["Cb_uM"]          # 血浆浓度 (μM)
-            S_t = nt_therapy["S_t_umol_per_h"] # 肿瘤分泌通量 (μmol/h) —— 用它确定阴影窗口
-
-            # 分泌窗口：S_t > 1e-9 的连续区间
-            mask = S_t > 1e-9
-            if np.any(mask):
-                i0 = np.argmax(mask)                               # 第一次 > 0
-                i1 = len(mask) - np.argmax(mask[::-1]) - 1         # 最后一次 > 0
-                t0, t1 = t_h[i0], t_h[i1]
-            else:
-                t0, t1 = None, None
-
-            plt.figure(figsize=(9,5))
-            plt.plot(t_h, Cb, label="Plasma Glu (μM)")
-            # 阈值线
-            plt.axhline(50.0,   linestyle=":",  label="Baseline 50 μM")
-            plt.axhline(100.0,  linestyle="--", label="Caution 100 μM")
-            plt.axhline(1000.0, linestyle="--", label="Danger 1.0 mM")
-
-            # 分泌窗口阴影
-            if t0 is not None and t1 is not None and t1 > t0:
-                plt.axvspan(t0, t1, alpha=0.12, label="Tumor secretion window")
-
-            # 标题备注：峰值
-            peak = float(np.max(Cb))
-            plt.title(f"Plasma Glutamate vs Neurotoxicity Thresholds\n(peak={peak:.2f} μM)")
-            plt.xlabel("Time (h)")
-            plt.ylabel("Concentration (μM)")
-            plt.legend()
-            plt.tight_layout()
-
-            out_png = "results/neurotoxicity_preview.png"
-            plt.savefig(out_png, dpi=160)
-            plt.close()                     # ← 这里补上右括号
-            print(f"已保存: {out_png}")
-        except Exception as e:
-            print(f"绘图失败: {e}")
-
 
     # --- 提取分析数据 ---
     # y: [N_tumor, D_tumor, N_eng, Glu_intra, Glu_extra, Icd, gdhA]

@@ -12,6 +12,11 @@ from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 
+# === 只为定位，不改模型逻辑 ===
+import models.pk_toxicity as _pkt
+print("[USING PK]", _pkt.__file__)  # 跑起来会打印真正加载的 pk_toxicity.py 路径
+# ============================
+
 try:
     from models.pk_toxicity import (
         PKParams, ToxicityThresholds,
@@ -34,7 +39,6 @@ def trapezoid_flux(t, t_on, t_plateau, t_off, ramp_hours, peak_umol_per_h):
         return peak_umol_per_h * (t - t_on) / ramp_hours
     # 平台段
     if t_on + ramp_hours <= t < t_off:
-        # 介于 (t_plateau) 与 t_off 区间保证平台
         if t < t_plateau:
             return peak_umol_per_h
         if t_plateau <= t < t_off:
@@ -51,16 +55,16 @@ def main():
     # ==== 配置区：可改 ====
     sim_hours = 48.0
     dt_h = 0.1
-    baseline_uM = 50.0  # 血浆/组织/脑脊液三个室的基线
-    intensity = "mild"  # 可改为 'high' 看更强分泌
-    # mild / high 两档峰值（μmol/h）
-    peak_umol_per_h = 0.02 if intensity == "mild" else 0.2
-    # 通量时序（单位：小时）
+    baseline_uM = 50.0             # 血/其他室的基线
+    intensity = "init-30mM"        # 标记一下这次情形
+    peak_umol_per_h = 0.0          # 不额外加外泌通量，单看30 mM初始条件的外溢效应
+    # 通量时序（保留以便之后要用S_t时再开）
     t_on = 8.0
     ramp_hours = 2.0
-    t_plateau = t_on + ramp_hours   # 10 h 进入平台
-    t_off = 34.0                    # 34 h 开始下降
+    t_plateau = t_on + ramp_hours
+    t_off = 34.0
     # =====================
+
 
     # 时间网格
     t_h = np.linspace(0.0, sim_hours, int(sim_hours / dt_h) + 1)
@@ -80,21 +84,52 @@ def main():
     )
 
     print("[INFO] running PK integration...", flush=True)
-    params = PKParams()
-    # 给三室都设定 ~50 μM 的初值，表示基线
+    # 关键：把血↔肿瘤耦合调小，避免“瞬时倾倒”；肿瘤清除也稍小一些以维持高浓度
+    params = PKParams(
+        k_bt=1e-3,     # 血<->肿瘤交换很弱（每小时 0.1% 级），避免瞬间洗出30 mM
+        k_t_clr=0.05,  # 肿瘤清除放缓（从30 mM往50 μM回落的速度别太快）
+        # 其余参数用默认：Vb=2 mL, Vt=0.5 mL, k_bn=0.5, k_b_clr=0.5, k_n_clr=0.2 ...
+    )
+
+    # 三个室的初值：血和其他维持50 μM，肿瘤从30 mM开始
     Cb, Ct, Cn = simulate_three_comp_pk(
         t_grid_h=t_h,
-        S_t_umol_per_h=S_t,
+        S_t_umol_per_h=S_t * 0.0,      # 此次不叠加通量；若想再加外泌，改回 S_t
         params=params,
-        Cb0_uM=baseline_uM, Ct0_uM=baseline_uM, Cn0_uM=baseline_uM
+        Cb0_uM=baseline_uM,
+        Ct0_uM=30000.0,                # 30 mM = 30000 μM
+        Cn0_uM=baseline_uM,
+        baseline_uM=baseline_uM,
+        # debug=True,
     )
+    
+    # === 新增：control 组（基线起步 + 无外泌）===
+    Cb_ctrl, Ct_ctrl, Cn_ctrl = simulate_three_comp_pk(
+        t_grid_h=t_h,
+        S_t_umol_per_h=S_t * 0.0,      # 对照为 0
+        params=params,
+        Cb0_uM=baseline_uM,
+        Ct0_uM=baseline_uM,            # 肿瘤室也从 50 µM 起步
+        Cn0_uM=baseline_uM,
+        baseline_uM=baseline_uM,
+    )
+
+    # 数值上确认真实抬升（别只看图）
+    dCb = Cb - baseline_uM
+    dCt = Ct - baseline_uM
+    print(f"[DBG] ΔCb_max = {float(np.max(dCb)):.6f} μM, ΔCt_max = {float(np.max(dCt)):.6f} μM")
 
     print("[INFO] assessing risk...", flush=True)
     thr = ToxicityThresholds()
     report = assess_neurotoxicity(Cb, t_h, thr)
+    report_ctrl = assess_neurotoxicity(Cb_ctrl, t_h, thr)       # ← 新增control
 
     print("\n=== Neurotoxicity Risk Report (physio-ish) ===", flush=True)
     for k, v in report.items():
+        print(f"{k}: {v}", flush=True)
+
+    print("\n=== Neurotoxicity Risk Report (control) ===", flush=True)  # ← 新增control
+    for k, v in report_ctrl.items():
         print(f"{k}: {v}", flush=True)
 
     # 输出目录（带时间戳与强度，避免覆盖）
@@ -103,27 +138,57 @@ def main():
     outdir.mkdir(parents=True, exist_ok=True)
     out_png = outdir / "plasma_glu_neurotoxicity.png"
 
-    # 画图
+    # ===== 画图：主轴看细节，次轴放阈值线 & 分泌窗口 =====
     print(f"[INFO] saving figure -> {out_png}", flush=True)
-    plt.figure(figsize=(7, 4.5))
-    plt.plot(t_h, Cb, label="Plasma Glu (μM)")
-    plt.axhline(baseline_uM, linestyle=":", label=f"Baseline {baseline_uM:.0f} μM")
-    plt.axhline(thr.caution_um, linestyle="--", label=f"Caution {thr.caution_um:.0f} μM")
-    plt.axhline(thr.danger_um, linestyle="--", label=f"Danger {thr.danger_um/1000:.1f} mM")
+    fig, ax = plt.subplots(figsize=(9, 5))
 
-    # 辅助标注：通量窗口
-    plt.axvspan(t_on, t_off, alpha=0.1, label="Tumor secretion window")
+    # 主轴：血浆（放大 y 轴）
+    ax.plot(t_h, Cb, label="Plasma Glu (therapy)")
+    ax.plot(t_h, Cb_ctrl, "--", alpha=0.9, label="Plasma Glu (control)")  # ← 新增control
 
-    plt.xlabel("Time (h)")
-    plt.ylabel("Concentration (μM)")
-    plt.title(
+    span = float(Cb.max() - Cb.min())
+    if span < 5.0:
+        pad = max(1.0, 0.15 * max(1.0, span))
+        ax.set_ylim(float(min(Cb.min(), Cb_ctrl.min())) - pad,
+                    float(max(Cb.max(), Cb_ctrl.max())) + pad)
+    else:
+        # 也用治疗/对照的总体范围决定 y 轴更稳妥
+        lo = min(Cb.min(), Cb_ctrl.min())
+        hi = max(Cb.max(), Cb_ctrl.max())
+        ax.set_ylim(min(45, lo - 2), max(110, hi + 2))
+
+    ax.axhline(baseline_uM, ls=":", lw=1.2, alpha=0.8, label=f"Baseline {baseline_uM:.0f} μM")
+
+    ax.set_xlabel("Time (h)")
+    ax.set_ylabel("Concentration (μM)")
+    ax.grid(True, alpha=0.25)
+
+    # 次轴：阈值/窗口（不影响主轴缩放）
+    ax2 = ax.twinx()
+    ax2.set_ylim(0, 1050)
+    ax2.set_yticks([])
+    ax2.axhline(thr.caution_um, ls="--", lw=1.2, alpha=0.6, label=f"Caution {thr.caution_um:.0f} μM")
+    ax2.axhline(thr.danger_um,  ls="--", lw=1.2, alpha=0.6, label="Danger 1.0 mM")
+    ax2.axvspan(t_on, t_off, alpha=0.08, label="Tumor secretion window")
+
+    # 合并图例
+    handles, labels = [], []
+    for a in (ax, ax2):
+        h, l = a.get_legend_handles_labels()
+        handles += h; labels += l
+    seen, H, L = set(), [], []
+    for h, l in zip(handles, labels):
+        if l in seen: continue
+        seen.add(l); H.append(h); L.append(l)
+    ax.legend(H, L, loc="upper right", framealpha=0.9)
+
+    ax.set_title(
         f"Plasma Glutamate vs Neurotoxicity Thresholds\n"
         f"(Intensity={intensity}, peak={peak_umol_per_h} μmol/h)"
     )
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(out_png, dpi=200)
-    plt.close()
+    fig.tight_layout()
+    fig.savefig(out_png, dpi=200)
+    plt.close(fig)
     print("[INFO] done.", flush=True)
 
 

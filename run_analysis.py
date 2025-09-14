@@ -84,7 +84,7 @@ def run_glutamate_analysis():
     model = GluMetabolismModel()
     
     # 运行模拟
-    t, solution = model.simulate(t7_activity_on, t_end=48, dt=0.1)
+    t, solution = model.simulate(t_end=48, dt=0.1, t7_activity=t7_activity_on)
     
     # 提取结果
     glu_intra = solution[:, 0]

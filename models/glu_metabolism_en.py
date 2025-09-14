@@ -9,20 +9,8 @@ Core Functions:
 - Wild-type: homeostatic control, no response to heat shock
 """
 
-
-import sys
-import os
 import numpy as np
 from scipy.integrate import odeint
-
-# get the parent directory of the current file (i.e. the project root dir)
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_dir, '..'))
-
-# add the project root directory to the Python module search path
-sys.path.insert(0, project_root)
-
-from config_manager import ConfigManager # 导入ConfigManager
 
 class GluModel:
     """
@@ -36,11 +24,6 @@ class GluModel:
         """Initialize model"""
         self.strain_type = strain_type
         
-        # if no params are passed, get default params from ConfigManager
-        if not params:
-            config_manager = ConfigManager()
-            params = config_manager.get_params('glu_metabolism_en')
-
         # Basic parameters
         self.V_max_glc = params.get('V_max_glc', 10.0)
         self.K_m_glc = params.get('K_m_glc', 1.0)
@@ -80,14 +63,14 @@ class GluModel:
         else:
             self.fold_ICD_max = params.get('fold_ICD_max', 1000.0)
             self.fold_GDH_max = params.get('fold_GDH_max', 1500.0)
-            self.homeostasis_strength = params.get('homeostasis_strength', 2.0)
+            self.homeostasis_strength = 2.0
             self.accum_threshold = params.get('accum_threshold', 55.0)
             self.export_accum_suppression = params.get('export_accum_suppression', 0.05)
             self.postshock_export_boost = params.get('postshock_export_boost', 10.0)
             self.extracellular_clearance_rate = params.get('extracellular_clearance_rate', 0.5)
             self.export_decay_rate = params.get('export_decay_rate', 0.8)
         
-        self.Glu_target = params.get('Glu_target', 20.0)
+        self.Glu_target = 20.0
         
     def calculate_growth_rate(self, Glc_ext):
         return self.mu_max * Glc_ext / (self.K_m_glc + Glc_ext)
