@@ -65,7 +65,6 @@ def main():
     t_off = 34.0
     # =====================
 
-
     # 时间网格
     t_h = np.linspace(0.0, sim_hours, int(sim_hours / dt_h) + 1)
 
@@ -102,8 +101,8 @@ def main():
         baseline_uM=baseline_uM,
         # debug=True,
     )
-    
-    # === 新增：control 组（基线起步 + 无外泌）===
+
+    # === control 组（基线起步 + 无外泌）===
     Cb_ctrl, Ct_ctrl, Cn_ctrl = simulate_three_comp_pk(
         t_grid_h=t_h,
         S_t_umol_per_h=S_t * 0.0,      # 对照为 0
@@ -122,13 +121,13 @@ def main():
     print("[INFO] assessing risk...", flush=True)
     thr = ToxicityThresholds()
     report = assess_neurotoxicity(Cb, t_h, thr)
-    report_ctrl = assess_neurotoxicity(Cb_ctrl, t_h, thr)       # ← 新增control
+    report_ctrl = assess_neurotoxicity(Cb_ctrl, t_h, thr)
 
     print("\n=== Neurotoxicity Risk Report (physio-ish) ===", flush=True)
     for k, v in report.items():
         print(f"{k}: {v}", flush=True)
 
-    print("\n=== Neurotoxicity Risk Report (control) ===", flush=True)  # ← 新增control
+    print("\n=== Neurotoxicity Risk Report (control) ===", flush=True)
     for k, v in report_ctrl.items():
         print(f"{k}: {v}", flush=True)
 
@@ -138,37 +137,50 @@ def main():
     outdir.mkdir(parents=True, exist_ok=True)
     out_png = outdir / "plasma_glu_neurotoxicity.png"
 
-    # ===== 画图：主轴看细节，次轴放阈值线 & 分泌窗口 =====
+    # ===== 画图：主轴画曲线+阈值；右轴只画分泌窗口并与左轴同步 =====
     print(f"[INFO] saving figure -> {out_png}", flush=True)
     fig, ax = plt.subplots(figsize=(9, 5))
 
-    # 主轴：血浆（放大 y 轴）
+    # 主轴：血浆
     ax.plot(t_h, Cb, label="Plasma Glu (therapy)")
-    ax.plot(t_h, Cb_ctrl, "--", alpha=0.9, label="Plasma Glu (control)")  # ← 新增control
+    ax.plot(t_h, Cb_ctrl, "--", alpha=0.9, label="Plasma Glu (control)")
 
-    span = float(Cb.max() - Cb.min())
+    # 根据治疗/对照的总体范围设置y轴
+    span = float(max(Cb.max(), Cb_ctrl.max()) - min(Cb.min(), Cb_ctrl.min()))
     if span < 5.0:
         pad = max(1.0, 0.15 * max(1.0, span))
-        ax.set_ylim(float(min(Cb.min(), Cb_ctrl.min())) - pad,
-                    float(max(Cb.max(), Cb_ctrl.max())) + pad)
+        ylo = float(min(Cb.min(), Cb_ctrl.min()) - pad)
+        yhi = float(max(Cb.max(), Cb_ctrl.max()) + pad)
     else:
-        # 也用治疗/对照的总体范围决定 y 轴更稳妥
         lo = min(Cb.min(), Cb_ctrl.min())
         hi = max(Cb.max(), Cb_ctrl.max())
-        ax.set_ylim(min(45, lo - 2), max(110, hi + 2))
+        ylo, yhi = min(45, lo - 2), max(110, hi + 2)
 
+    # 确保能看到 caution=100 μM（必要时抬高上限）
+    yhi = max(yhi, thr.caution_um * 1.05, 110)  # danger 若要可见可改为 thr.danger_um*1.05
+    ax.set_ylim(ylo, yhi)
+
+    # 基线 & 轴样式
     ax.axhline(baseline_uM, ls=":", lw=1.2, alpha=0.8, label=f"Baseline {baseline_uM:.0f} μM")
-
     ax.set_xlabel("Time (h)")
     ax.set_ylabel("Concentration (μM)")
     ax.grid(True, alpha=0.25)
 
-    # 次轴：阈值/窗口（不影响主轴缩放）
+    # —— 阈值直接画在主轴上（与曲线同一坐标系，避免错位）——
+    ax.axhline(thr.caution_um, ls="--", lw=1.2, alpha=0.6,
+               label=f"Caution {thr.caution_um:.0f} μM")
+    ax.axhline(thr.danger_um,  ls="--", lw=1.2, alpha=0.6,
+               label="Danger 1.0 mM")
+
+    # 右轴仅用于分泌窗口阴影；与左轴范围同步，避免视觉错位
     ax2 = ax.twinx()
-    ax2.set_ylim(0, 1050)
+    ax2.set_ylim(ax.get_ylim())
     ax2.set_yticks([])
-    ax2.axhline(thr.caution_um, ls="--", lw=1.2, alpha=0.6, label=f"Caution {thr.caution_um:.0f} μM")
-    ax2.axhline(thr.danger_um,  ls="--", lw=1.2, alpha=0.6, label="Danger 1.0 mM")
+
+    def _sync_ylim(_):
+        ax2.set_ylim(ax.get_ylim())
+    ax.callbacks.connect('ylim_changed', _sync_ylim)
+
     ax2.axvspan(t_on, t_off, alpha=0.08, label="Tumor secretion window")
 
     # 合并图例
@@ -178,7 +190,8 @@ def main():
         handles += h; labels += l
     seen, H, L = set(), [], []
     for h, l in zip(handles, labels):
-        if l in seen: continue
+        if l in seen:
+            continue
         seen.add(l); H.append(h); L.append(l)
     ax.legend(H, L, loc="upper right", framealpha=0.9)
 
