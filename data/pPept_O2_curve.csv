@@ -1,7 +1,7 @@
-O2_percent,reporter_MEFL,replicate_id
-0.0,1000,1
-0.5,800,1
-1.0,600,1
-2.0,400,1
-5.0,200,1
-21.0,100,1
+O2_percent,reporter_MEFL,replicate_id,notes
+0.5,45.5,1,Deep hypoxia - maximum induction
+1.0,45.72,1,Hypoxia condition (BBa_K4634000 data)
+2.0,42.1,1,Moderate hypoxia
+5.0,36.8,1,Mild hypoxia
+10.0,33.2,1,Reduced oxygen
+21.0,30.09,1,Normoxia condition (BBa_K4634000 data)
