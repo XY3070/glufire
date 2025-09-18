@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>General Description of Modeling</title>
+  <style>
+    body {
+      font-family: "Times New Roman", serif;
+      line-height: 1.6;
+      margin: 40px;
+      max-width: 900px;
+    }
+    h1, h2, h3 {
+      color: #2c3e50;
+    }
+    p {
+      margin: 12px 0;
+    }
+    ul {
+      margin: 12px 0 12px 30px;
+    }
+  </style>
+
+  <script type="text/javascript">
+    window.MathJax = {
+      tex: { inlineMath: [['\(','\)'], ['$', '$']], displayMath: [['\[','\]'], ['$$','$$']] },
+      chtml: { scale: 1.0 }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+</head>
+<body>
+  <h1>General Description of Modeling</h1>
+
+  <h2>Purposes</h2>
+  <p><strong>1. Quantitative Representation of Therapeutic Design</strong><br>
+  Direct in vivo validation of tumor microenvironment dynamics and ferroptosis progression is constrained by biosafety and resource limitations. Our mathematical model reconstructs the therapeutic cascade—environmental logic sensing → T7 activation → glutamate overproduction → ferroptosis-mediated tumor killing—and provides quantitative evidence to support both feasibility and design rationale.
+  </p>
+
+  <p><strong>2. Computational Engineering Framework</strong><br>
+  The model establishes a modular computational platform with tunable parameters (e.g., T7 activation thresholds, glutamate secretion kinetics, ferroptosis sensitivity, diffusion scales). This framework guides experimental design, reduces screening workload, and encapsulates system behavior into reusable engineering components.
+  </p>
+
+  <h2>Structure</h2>
+  <p>The complete modeling framework is composed of three mechanistically linked layers:</p>
+  <ul>
+    <li><strong>AND Gate Logic Model (O₂ + Temperature)</strong>: Captures the dual-input regulation where hypoxia relief and mild hyperthermia jointly activate split-T7 RNA polymerase. This is represented by coupled Hill functions, ensuring stringent AND logic behavior.</li>
+    <li><strong>Glutamate Metabolism Model</strong>: Translates T7 activation into intracellular enzyme expression, glutamate biosynthesis, and export. Incorporates ultrasensitive Hill-type regulation to ensure sharp ON/OFF dynamics and strong separation between basal and induced states.</li>
+    <li><strong>Diffusion and Pharmacokinetics Model</strong>: Describes extracellular glutamate distribution and clearance across tumor and systemic compartments. Supports evaluation of exposure windows and spatial availability, with optional extensions to assess systemic toxicity. A neurotoxicity assessment module compares predicted plasma glutamate levels against established safety thresholds to flag potential risks.</li>
+  </ul>
+
+  <h2>Integration</h2>
+  <p>Finally, the three models are coupled into an <strong>Integrated Therapy Model</strong> that incorporates tumor cell growth, engineered bacterial dynamics, glutamate accumulation, and ferroptosis-induced tumor death. The integrated framework outputs key therapeutic efficacy metrics such as survival fraction and killing rate, thereby providing a quantitative foundation for both design optimization and safety evaluation.</p>
+<img src="https://static.igem.wiki/teams/5926/drylab/drylab-description.webp" alt="iGEM Engineered Bacteria Glutamate Metabolism Model Analysis" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+
+<title>Engineered Bacteria Glutamate Metabolism ODE  Model</title>
+
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Engineered Bacteria Glutamate Metabolism ODE  Model</title>
+
+  <!-- Clean styling -->
+  <style>
+    :root{
+      --bg:#ffffff; --text:#111827; --muted:#555; --accent:#0b5fff;
+      --card:#fbfdff; --border:#e6e9ee; --mono:Menlo,Monaco,Consolas,"Liberation Mono",monospace;
+    }
+    html,body{height:100%; margin:0; font-family:Inter, "Helvetica Neue", Arial, sans-serif; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased;}
+    .container{max-width:1200px; margin:28px auto; padding:28px; background:var(--card); border:1px solid var(--border); border-radius:10px; box-shadow:0 6px 20px rgba(17,24,39,0.05);}
+    h1{margin:0 0 8px; font-size:28px; color:#1a202c;}
+    h2{margin:22px 0 8px; font-size:18px; color:var(--accent);}
+    h3{margin:16px 0 8px; font-size:16px;}
+    p{line-height:1.6; margin:8px 0; color:var(--muted);}
+    ul,ol{margin:8px 0 8px 20px;}
+    li{margin:4px 0;}
+    table{width:100%; border-collapse:collapse; margin-top:12px; font-size:14px;}
+    th,td{padding:8px 10px; border:1px solid var(--border); text-align:left;}
+    th{background:#f6f9ff; color:var(--text); font-weight:600;}
+    code, pre{font-family:var(--mono); font-size:13px; background:#f4f6f8; padding:4px 8px; border-radius:6px; color:#0b3a66;}
+    .equation{margin:12px 0; padding:12px; background:#fff; border-left:4px solid #e6eefc; border-radius:6px;}
+    .note{font-size:13px; color:#334155; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #eef2ff;}
+    .highlight{background:#fff3cd; padding:8px; border-radius:4px; margin:8px 0;}
+    footer{margin-top:20px; font-size:13px; color:#6b7280;}
+    .two-col{display:grid; grid-template-columns: 1fr 1fr; gap:18px;}
+    @media (max-width:720px){ .container{padding:16px} .two-col{grid-template-columns:1fr} }
+  </style>
+
+  <!-- MathJax for equations -->
+  <script type="text/javascript">
+    window.MathJax = {
+      tex: { inlineMath: [['\\(','\\)'], ['$', '$']], displayMath: [['\\[','\\]'], ['$$','$$']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  
+</head>
+<body>
+  <div class="container">
+    <h1>AND Gate Logic Model (O₂ + Temperature)</h1>
+    
+    <h2>1. Biological Rationale and Heat Shock Activation</h2>
+    <p>The AND gate logic model implements a dual-input environmental sensing system that ensures precise spatial and temporal control of therapeutic gene expression. This design philosophy addresses a critical challenge in engineered bacteria therapy: <strong>selective activation only within the tumor microenvironment</strong> while remaining inactive in healthy tissues. The model is based on experimental data fitting from iGEM Tsinghua 2023 BioBrick characterization.</p>
+    
+    <ul>
+      <li><strong>Hypoxia Sensing (pPepT Promoter, BBa_K4634000):</strong> Responds to low oxygen levels (≤2% O₂) characteristic of solid tumor cores. The pPepT promoter acts as an oxygen-repressed system, showing maximal activity under severe hypoxic conditions and minimal activity under normoxic conditions (21% O₂). Parameters fitted to experimental oxygen response curves using Hill function modeling.</li>
+      <li><strong>Heat Shock Activation (pLR/CI857 System, BBa_K4634017):</strong> Activated by controlled heating (41-43°C) applied externally to tumor regions using focused ultrasound, magnetic hyperthermia, or external heating devices. <strong>Heat shock triggers CI857 protein unfolding, releasing transcriptional repression and activating split T7 fragment expression.</strong> The temperature response follows thermodynamic principles with van't Hoff equation modeling.</li>
+      <li><strong>Split T7 RNA Polymerase Assembly:</strong> The AND logic is implemented through a split T7 RNA polymerase where two separate protein fragments must assemble cooperatively to form an active polymerase. This ensures that <strong>both hypoxia AND heat shock conditions must be satisfied simultaneously</strong> for downstream gene expression. Assembly parameters optimized for >10-fold ON/OFF ratio.</li>
+    </ul>
+
+    <div style="text-align: center; margin: 20px 0;">
+      <img src="https://static.igem.wiki/teams/5926/drylab/and-gate.webp" alt="Promoter Logic Gate Construction" style="max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+      <p style="font-size: 13px; color: var(--muted); margin-top: 8px;"><strong>Figure:</strong> Promoter Logic Gate Construction showing the dual-input AND gate system with pPepT (hypoxia sensing), pLR/CI857 (heat shock activation), and split T7 RNA polymerase assembly for precise environmental control.</p>
+    </div>
+
+    <h2>2. Mathematical Implementation and Thermodynamic Modeling</h2>
+    <p>The model employs Hill functions for pPepT hypoxia response and thermodynamic equations for pLR/CI857 heat shock response, coupled with cooperative assembly kinetics for split T7 reconstitution.</p>
+
+    <div class="equation">
+      <p><strong>Promoter Activity Functions:</strong></p>
+      
+      <p><em>pPepT (Oxygen-Repressed Hill Function):</em></p>
+      \[pPepT_{activity} = leaky + \beta \cdot \frac{K^n}{K^n + [O_2]^n}\]
+      
+      <p><em>pLR/CI857 (Thermodynamic Response):</em></p>
+      \[pLR_{activity} = leaky + \beta \cdot \frac{1}{1 + \exp\left(-\frac{\Delta H}{R} \left(\frac{1}{T_{melt}} - \frac{1}{T}\right)\right)} \cdot damage_{factor}\]
+      
+      <p><em>Cellular Thermal Damage Factor:</em></p>
+      \[damage_{factor} = \begin{cases} 
+      1.0 & \text{if } T \leq T_{damage} \\
+      \exp(-k_{damage} \cdot (T - T_{damage})) & \text{if } T > T_{damage}
+      \end{cases}\]
+      
+      <p><strong>Split T7 Cooperative Assembly:</strong></p>
+      \[T7_{activity} = leaky + \alpha \cdot \frac{pPepT \times pLR}{K_d + (pPepT \times pLR)}\]
+      
+      <p style="font-size:12px; color:#666;">where the product term (pPepT × pLR) represents the cooperative assembly requiring both fragments</p>
+    </div>
+
+    <h2>3. Model Parameters from iGEM Experimental Data Fitting</h2>
+    <p>Parameters are derived from experimental characterization of iGEM Tsinghua 2023 BioBrick parts and fitted to experimental response curves using non-linear optimization methods. The model incorporates thermodynamic principles for CI857 protein behavior and optimized split T7 assembly kinetics.</p>
+    
+    <table>
+      <thead>
+        <tr><th>Parameter</th><th>Component</th><th>Value</th><th>Units</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <!-- pPepT parameters -->
+        <tr><td>β<sub>pPepT</sub></td><td>pPepT</td><td>43.72</td><td>AU</td><td>Maximum expression level</td></tr>
+        <tr><td>K<sub>pPepT</sub></td><td>pPepT</td><td>5.0</td><td>% O₂</td><td>Half-inhibition oxygen level</td></tr>
+        <tr><td>n<sub>pPepT</sub></td><td>pPepT</td><td>3.5</td><td>-</td><td>Hill coefficient (cooperativity)</td></tr>
+        <tr><td>leaky<sub>pPepT</sub></td><td>pPepT</td><td>2.0</td><td>AU</td><td>Basal expression level</td></tr>
+        
+        <!-- pLR/CI857 parameters -->
+        <tr><td>T<sub>melt</sub></td><td>pLR/CI857</td><td>40.305</td><td>°C</td><td>CI857 protein melting temperature</td></tr>
+        <tr><td>ΔH</td><td>pLR/CI857</td><td>239.018</td><td>kJ/mol</td><td>Protein unfolding enthalpy</td></tr>
+        <tr><td>β<sub>pLR</sub></td><td>pLR/CI857</td><td>89.349</td><td>AU</td><td>Maximum expression increment</td></tr>
+        <tr><td>leaky<sub>pLR</sub></td><td>pLR/CI857</td><td>0.500</td><td>AU</td><td>Basal expression level</td></tr>
+        <tr><td>T<sub>damage</sub></td><td>pLR/CI857</td><td>43.971</td><td>°C</td><td>Cell thermal damage threshold</td></tr>
+        <tr><td>k<sub>damage</sub></td><td>pLR/CI857</td><td>1.738</td><td>1/°C</td><td>Thermal damage decay rate</td></tr>
+        
+        <!-- Split T7 parameters -->
+        <tr><td>α</td><td>Split T7</td><td>2500.0</td><td>AU</td><td>Maximum T7 activity</td></tr>
+        <tr><td>K<sub>d</sub></td><td>Split T7</td><td>80000.0</td><td>AU²</td><td>Assembly dissociation constant</td></tr>
+        <tr><td>leaky<sub>T7</sub></td><td>Split T7</td><td>0.0</td><td>AU</td><td>Zero background leakage</td></tr>
+      </tbody>
+    </table>
+
+    <h2>4. AND Gate Logic Verification and Safety Assessment</h2>
+    <p>The model demonstrates strict AND gate behavior through systematic testing of input combinations. The optimized parameters ensure >10-fold ON/OFF ratio for robust logic gate performance:</p>
+
+    <div class="note">
+      <strong>Logic Truth Table (Updated Model):</strong>
+      <table style="margin-top: 10px; font-size: 13px;">
+        <thead>
+          <tr><th>O₂ Level</th><th>Temperature</th><th>pPepT Output</th><th>pLR Output</th><th>T7 Activity</th><th>Logic State</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1% (LOW)</td><td>42°C (HIGH)</td><td>~69 AU</td><td>~84 AU</td><td>~166 AU</td><td><strong>ON</strong></td></tr>
+          
+          <tr><td>1% (LOW)</td><td>37°C (LOW)</td><td>~69 AU</td><td>~1 AU</td><td>~3 AU</td><td>OFF</td></tr>
+          <tr><td>21% (HIGH)</td><td>37°C (LOW)</td><td>~25 AU</td><td>~1 AU</td><td>~1 AU</td><td>OFF</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top: 8px; font-size: 12px;"><strong>ON/OFF Ratio:</strong> ~166/3 = 55.3x (exceeds 10x design target)</p>
+    </div>
+
+    <h2>5. Comprehensive Analysis and Heat Shock Activation Results</h2>
+    <p>The four-panel analysis demonstrates the integrated behavior of the AND gate system, showing individual promoter responses, combined logic, and temporal dynamics under heat shock activation:</p>
+    
+    <div style="text-align: center; margin: 20px 0;">
+      <img src="https://static.igem.wiki/teams/5926/drylab/and-gate-comprehensive-analysis.webp" alt="AND Gate Comprehensive Analysis" style="max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+      <p style="font-size: 13px; color: var(--muted); margin-top: 8px;"><strong>Figure:</strong> Four-panel analysis of the AND gate model showing (A) pPepT hypoxia response fitted to experimental data, (B) pLR/CI857 heat shock response with thermodynamic modeling, (C) AND gate logic heatmap demonstrating strict logic behavior, and (D) temporal dynamics during heat shock activation protocol (4-6h treatment window).</p>
+    </div>
+
+    <div class="highlight">
+      <strong>Heat Shock Activation Protocol:</strong> The system is designed for external heat shock activation at 41-43°C for 2-4 hours, triggering CI857 protein unfolding and split T7 assembly. This provides precise temporal and spatial control over therapeutic gene expression while maintaining strict AND logic requirements.
+    </div>
+
+    <h2>6. Model Classes and Implementation</h2>
+    <p>The implementation provides a simplified algebraic model optimized for parameter screening and logic verification:</p>
+
+    <ul>
+      <li><strong>SimpleANDGate:</strong> Steady-state algebraic model using Hill functions and thermodynamic equations. Provides fast computation for parameter screening and logic verification. Includes built-in diagnostic functions for condition scanning and safety assessment.</li>
+      <li><strong>Thermodynamic Response Functions:</strong> CI857 temperature response modeled using van't Hoff equation with cellular thermal damage correction, providing biologically realistic heat shock behavior.</li>
+      <li><strong>Visualization Functions:</strong> Integrated comprehensive analysis plotting including individual promoter responses, logic heatmaps, and temporal dynamics simulation.</li>
+    </ul>
+
+    <h2>7. Integration with Downstream Models</h2>
+    <p>The AND gate model serves as the environmental sensing front-end for the complete therapeutic system:</p>
+    
+    <ol>
+      <li><strong>Environmental Sensing:</strong> O₂ and temperature inputs are processed through the AND gate logic with heat shock activation</li>
+      <li><strong>Split T7 Assembly:</strong> Cooperative assembly of T7 fragments drives downstream glutamate metabolism gene expression</li>
+      <li><strong>Therapeutic Cascade:</strong> Controlled glutamate production leads to targeted ferroptosis induction in tumor cells</li>
+      <li><strong>Safety Mechanism:</strong> AND gate ensures activation only under both hypoxic and heat shock conditions, preventing off-target effects</li>
+    </ol>
+
+  </div>
+
+  <div class="container">
+    <h1>Engineered Bacteria Glutamate Metabolism ODE Model</h1>
+    
+    <h2>1. Biological Rationale</h2>
+    <ul>
+      <li><strong>Heat Shock Response:</strong> T7 polymerase expression is triggered by heat shock (8-12h), leading to coordinated overexpression of ICD and GDH enzymes in engineered strains.</li>
+      <li><strong>ICD (Isocitrate Dehydrogenase):</strong> Catalyzes isocitrate → α-ketoglutarate (AKG) + CO₂ + NADPH, providing both carbon precursor and reducing equivalents for glutamate synthesis.</li>
+      <li><strong>GDH (Glutamate Dehydrogenase, gdhA):</strong> Catalyzes AKG + NH₄⁺ + NADPH → Glu + NADP⁺, converting carbon skeleton to glutamate.</li>
+      <li><strong>Dynamic Regulation:</strong> The model incorporates sophisticated regulation mechanisms including accumulation promotion during heat shock and gradual recovery post-shock to achieve ≥50mM intracellular peak and ~20mM final recovery.</li>
+    </ul>
+
+    <h2>2. State Variables and Units</h2>
+    <p>The model assumes batch cultivation in a homogeneous system and the initial values conform to the normal physiological environment of the Escherichia coli. Concentrations are expressed per unit volume (L), commonly in mmol·L⁻¹ (mM); biomass X in gDW·L⁻¹.</p>
+    
+    <table>
+      <thead>
+        <tr><th>Variable</th><th>Description</th><th>Units</th><th>Initial Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>Glc_ext</code></td><td>Extracellular glucose</td><td>mmol·L⁻¹</td><td>50.0</td></tr>
+        <tr><td><code>NH4_ext</code></td><td>Extracellular ammonium</td><td>mmol·L⁻¹</td><td>10.0</td></tr>
+        <tr><td><code>ICIT</code></td><td>Intracellular isocitrate pool</td><td>mmol·L⁻¹</td><td>0.1</td></tr>
+        <tr><td><code>AKG</code></td><td>Intracellular α-ketoglutarate</td><td>mmol·L⁻¹</td><td>0.5</td></tr>
+        <tr><td><code>Glu_in</code></td><td>Intracellular glutamate</td><td>mmol·L⁻¹</td><td>20.0</td></tr>
+        <tr><td><code>NADPH</code></td><td>Intracellular NADPH pool</td><td>mmol·L⁻¹</td><td>0.10</td></tr>
+        <tr><td><code>X</code></td><td>Biomass concentration</td><td>gDW·L⁻¹</td><td>0.1</td></tr>
+        <tr><td><code>Glu_ext</code></td><td>Extracellular glutamate</td><td>mmol·L⁻¹</td><td>0.0</td></tr>
+        <tr><td><code>fold_ICD</code></td><td>ICD overexpression fold</td><td>dimensionless</td><td>1.0</td></tr>
+        <tr><td><code>fold_GDH</code></td><td>GDH overexpression fold</td><td>dimensionless</td><td>1.0</td></tr>
+      </tbody>
+    </table>
+
+    <h2>3. Kinetic Rate Expressions</h2>
+    <p>The model employs Michaelis-Menten and Monod-type kinetics. Rates v expressed per gDW (mmol·gDW⁻¹·h⁻¹) are converted to volumetric basis by multiplication with X.</p>
+
+    <div class="equation">
+      <p><strong>Glucose Uptake (Monod)</strong></p>
+      \[q_{glc} = V_{max}^{glc} \frac{[Glc_{ext}]}{K_m^{glc} + [Glc_{ext}]}\]
+
+      <p><strong>Growth Rate</strong></p>
+      \[\mu = \mu_{max} \frac{[Glc_{ext}]}{K_m^{glc} + [Glc_{ext}]}\]
+
+      <p><strong>TCA Carbon Flow</strong></p>
+      \[v_{TCAin} = f_{TCA} \cdot q_{glc}\]
+
+      <p><strong>ICD Reaction (isocitrate → AKG + NADPH)</strong></p>
+      \[v_{ICD} = V_{max}^{ICD} \cdot fold_{ICD} \cdot \frac{[ICIT]}{K_m^{ICD} + [ICIT]}\]
+
+      <p><strong>GDH Reaction (AKG + NH₄⁺ + NADPH → Glu) — Multiplicative Michaelis</strong></p>
+      \[v_{GDH} = V_{max}^{GDH} \cdot fold_{GDH} \cdot \frac{[AKG]}{K_m^{AKG}+[AKG]} \cdot \frac{[NH_{4,ext}]}{K_m^{NH4}+[NH_{4,ext}]} \cdot \frac{[NADPH]}{K_m^{NADPH}+[NADPH]}\]
+
+    
+      <p><strong>Dynamic Glutamate Regulation</strong></p>
+      \[v_{reg} = f_{dynamic}(Glu_{in}, fold_{GDH}, v_{GDH}, t)\]
+      <p style="font-size:12px; color:#666;">where f_dynamic implements accumulation promotion during heat shock and gradual recovery thereafter</p>
+    </div>
+
+    <h2>4. Ordinary Differential Equations (ODEs)</h2>
+    <p>All equations have units of concentration derivatives as mmol·L⁻¹·h⁻¹ and biomass derivative as gDW·L⁻¹·h⁻¹.</p>
+
+    <div class="equation">
+      
+      <p><strong>Substrate and Metabolite Dynamics:</strong></p>
+      \[ \frac{d\,Glc_{ext}}{dt} = -\, q_{glc}\, X \]
+      \[ \frac{d\,NH_{4,ext}}{dt} = -\, v_{GDH}\, X \]
+      \[ \frac{d\,ICIT}{dt} = (\, v_{TCAin} - v_{ICD} \,)\, X \;-\; \mu\, ICIT \]
+      \[ \frac{d\,AKG}{dt} = (\, v_{ICD} - v_{GDH} \,)\, X \;-\; \mu\, AKG \;+\; v_{AKG,homeo} \]
+      \[ \frac{d\,Glu_{in}}{dt} = v_{GDH}\, X \;-\; v_{sec}\, X \;-\; \mu\, Glu_{in} \;+\; v_{homeo} \;+\; v_{reg} \]
+      \[ \frac{d\,NADPH}{dt} = \big(\, k_{PPP}\, q_{glc} \;+\; y_{ICD}^{NADPH}\, v_{ICD} \,\big)\, X \;-\; v_{GDH}\, X \;+\; v_{relax} \]
+      \[ \frac{d\,X}{dt} = \mu\, X \;-\; k_{maintenance}\, X \]
+      \[ \frac{d\,Glu_{ext}}{dt} = v_{export,net}\, X \ ]
+
+      <p><strong>Enzyme Expression Dynamics:</strong></p>
+      \[\frac{d[fold_{ICD}]}{dt} = \text{calculate_enzyme_expression}(T7, fold_{ICD})\]
+      \[\frac{d[fold_{GDH}]}{dt} = \text{calculate_enzyme_expression}(T7, fold_{GDH})\]
+    </div>
+
+    <h2>5. Parameter Table (Based on Python Implementation)</h2>
+    <p>Given the limited availability of organism-specific kinetic data, certain parameters were approximated using literature-derived values or rational assumptions. These estimated values inevitably constrain the precision of our model, yet they remain within biologically plausible ranges and serve to guide hypothesis generation.</p>
+    <table>
+      <thead>
+        <tr><th>Parameter</th><th>Description</th><th>Default Value</th><th>Units</th><th>Source/Notes</th></tr>
+      </thead>
+      <tbody>
+        <!-- Basic kinetics -->
+        <tr><td>V<sub>max</sub><sup>glc</sup></td><td>Maximum glucose uptake rate</td><td>10.0</td><td>mmol·gDW⁻¹·h⁻¹</td><td>Calibrated</td></tr>
+        <tr><td>K<sub>m</sub><sup>glc</sup></td><td>Glucose Monod constant</td><td>1.0</td><td>mmol·L⁻¹</td><td>Literature</td></tr>
+        <tr><td>μ<sub>max</sub></td><td>Maximum growth rate</td><td>0.5</td><td>h⁻¹</td><td>E. coli typical</td></tr>
+        <tr><td>f<sub>TCA</sub></td><td>Carbon fraction to TCA cycle</td><td>0.6</td><td>dimensionless</td><td>Metabolic flux</td></tr>
+        
+        <!-- Enzyme kinetics -->
+        <tr><td>V<sub>max,base</sub><sup>ICD</sup></td><td>Baseline ICD V<sub>max</sub></td><td>25.0</td><td>mmol·gDW⁻¹·h⁻¹</td><td>Enzyme assay</td></tr>
+        <tr><td>K<sub>m</sub><sup>ICD</sup></td><td>ICD K<sub>m</sub> for isocitrate</td><td>0.029</td><td>mmol·L⁻¹</td><td>Ogawa et al. 2007</td></tr>
+        <tr><td>V<sub>max,base</sub><sup>GDH</sup></td><td>Baseline GDH V<sub>max</sub></td><td>30.0</td><td>mmol·gDW⁻¹·h⁻¹</td><td>Enzyme assay</td></tr>
+        <tr><td>K<sub>m</sub><sup>AKG</sup></td><td>GDH K<sub>m</sub> for AKG</td><td>0.64</td><td>mmol·L⁻¹</td><td>Sakamoto et al. 1975</td></tr>
+        <tr><td>K<sub>m</sub><sup>NH4</sup></td><td>GDH K<sub>m</sub> for NH₄⁺</td><td>1.1</td><td>mmol·L⁻¹</td><td>Sakamoto et al. 1975</td></tr>
+        <tr><td>K<sub>m</sub><sup>NADPH</sup></td><td>GDH K<sub>m</sub> for NADPH</td><td>0.04</td><td>mmol·L⁻¹</td><td>Sakamoto et al. 1975</td></tr>
+        
+        <!-- Expression system -->
+        <tr><td>fold<sub>ICD,max</sub></td><td>Maximum ICD overexpression</td><td>1000.0</td><td>dimensionless</td><td>Engineering design</td></tr>
+        <tr><td>fold<sub>GDH,max</sub></td><td>Maximum GDH overexpression</td><td>1500.0</td><td>dimensionless</td><td>Engineering design</td></tr>
+        <tr><td>K<sub>T7</sub></td><td>T7 activation constant</td><td>800.0</td><td>AU</td><td>Heat shock system</td></tr>
+        <tr><td>n<sub>hill</sub></td><td>Hill coefficient for T7</td><td>3.0</td><td>dimensionless</td><td>Cooperative binding</td></tr>
+        <tr><td>τ<sub>enzyme</sub></td><td>Enzyme expression time constant</td><td>0.05</td><td>h</td><td>Protein synthesis</td></tr>
+        
+                
+    </table>
+
+    <h2>6. Engineering Strategy Implementation</h2>
+    <ul>
+      <li><strong>Heat Shock Protocol:</strong> T7 activity follows a step function: low baseline (50 AU) from 0-8h, high expression (3000 AU) during 8-12h heat shock, then return to baseline.</li>
+      <li><strong>Overexpression ICD:</strong> Increase V<sub>max</sub><sup>ICD</sup> = fold<sub>ICD</sub> × V<sub>max,base</sub><sup>ICD</sup> to boost AKG and NADPH production.</li>
+      <li><strong>Overexpression GDH:</strong> Increase V<sub>max</sub><sup>GDH</sup> = fold<sub>GDH</sub> × V<sub>max,base</sub><sup>GDH</sup> to enhance glutamate synthesis capacity.</li>
+      <li><strong>Dynamic Regulation:</strong> Sophisticated control system promotes accumulation during heat shock (≥50mM) and gradual recovery to homeostatic levels (~20mM).</li>
+      <li><strong>Export Control:</strong> Heat shock induces a metabolic reprogramming that channels flux toward intracellular glutamate accumulation, whereas membrane permeability or transporter systems are activated or engineered to facilitate sustained glutamate efflux and subsequent extracellular accumulation.</li>
+    </ul>
+
+    <h2>7. Model Assumptions</h2>
+    <ol>
+      <li>Batch cultivation in homogeneous system with constant volume.</li>
+      <li>Intracellular concentrations expressed per total cell volume without explicit compartmentalization.</li>
+      <li>Enzyme kinetics follow Michaelis-Menten formalism with V<sub>max</sub> proportional to expression level.</li>
+      <li>NADPH supply from PPP (glucose-coupled) and ICD reaction; relaxation term ensures numerical stability.</li>
+      <li>Transport simplified as first-order secretion; active export systems can be explicitly modeled if needed.</li>
+      <li>Complex regulatory mechanisms (nitrogen assimilation, allosteric feedback) simplified but can be extended with experimental data.</li>
+      <li>Wild-type strain maintains homeostatic glutamate levels with no response to heat shock.</li>
+    </ol>
+
+    
+    <h2>8. Model Simulation Results</h2>
+    <div style="text-align: center; margin: 20px 0;">
+      <img src="https://static.igem.wiki/teams/5926/drylab/glu-model-simplified-en.webp" alt="iGEM Engineered Bacteria Glutamate Metabolism Model Analysis" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+      <p style="font-size: 14px; color: #666; margin-top: 10px; font-style: italic;">Figure 1: Simulation results of the engineered bacteria glutamate metabolism model showing successful achievement of all target metrics.</p>
+    </div>
+
+    <div >
+      <h3>Key Results Summary:</h3>
+      <ul>
+                  
+        </li>
+        <li><strong>Result data analysis:</strong>The simulation demonstrates that the engineered bacteria successfully achieve the therapeutic target profile with intracellular glutamate accumulation ≥50mM during heat shock, controlled extracellular release ≥30mM, and natural recovery to homeostatic levels (~20mM). The wild-type strain maintains stability, confirming the specificity of the engineering approach.</li>
+        <li><strong>Heat Shock Protocol:</strong> 8-12h activation successfully triggers coordinated enzyme overexpression</li>
+        <li><strong>Metabolic Dynamics:</strong> AKG and NADPH levels show appropriate responses supporting glutamate synthesis</li>
+      </ul>
+    </div>
+</head>
+<body>
+  
+    <h1>Diffusion and Pharmacokinetics Model</h1>
+<section id="pk-toxic-module" style="margin-top:12px;">
+  <h2>Three-Compartment PK Module for Glutamate Neurotoxicity</h2>
+
+  <h3>1) Biological Rationale</h3>
+  <p>Glutamate is the main excitatory neurotransmitter in the CNS. Systemic overload may cross the blood–brain barrier and trigger excitotoxicity. In the tumor microenvironment, glutamate can accumulate due to engineered bacterial secretion or tumor necrosis. To quantify systemic safety, we use a <strong>three-compartment pharmacokinetics (PK) model</strong> tracking plasma (<em>b</em>), tumor interstitium (<em>t</em>), and other tissues (<em>n</em>), and assess plasma exposure against neurotoxicity thresholds.</p>
+  <p><strong>Upper-bound risk estimator.</strong> Based on pilot data, extracellular glutamate near <strong>30 mM</strong> can induce ferroptosis in tumor cells. Thus we define a conservative scenario by fixing the initial tumor concentration <code>Ct0 = 30 mM</code> (high load at t=0) with zero external flux. If plasma peaks remain below thresholds in this worst case, the practical in vivo risk should be even lower under dynamic production profiles.</p>
+
+  <h3>2) State Variables and Units</h3>
+  <table>
+    <thead><tr><th>Symbol</th><th>Meaning</th><th>Units</th></tr></thead>
+    <tbody>
+      <tr><td><code>Cb</code></td><td>Plasma glutamate</td><td>µM</td></tr>
+      <tr><td><code>Ct</code></td><td>Tumor interstitium glutamate</td><td>µM</td></tr>
+      <tr><td><code>Cn</code></td><td>Other tissues glutamate</td><td>µM</td></tr>
+      <tr><td><code>S<sub>t</sub>(t)</code></td><td>External input to tumor</td><td>µmol·h⁻¹</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3) Differential Equations</h3>
+  <div class="equation">
+    \[ \frac{dC_b}{dt} = -k_{bt}(C_b - C_t) - k_{bn}(C_b - C_n) - k_{b,clr}(C_b - C_{baseline}) \]
+    \[ \frac{dC_t}{dt} = \frac{V_b}{V_t}\,k_{bt}(C_b - C_t) - k_{t,clr}(C_t - C_{baseline}) + \frac{S_t}{V_t} \]
+    \[ \frac{dC_n}{dt} = \frac{V_b}{V_n}\,k_{bn}(C_b - C_n) - k_{n,clr}(C_n - C_{baseline}) \]
+  </div>
+
+  <h3>4) Parameters (defaults)</h3>
+  <table>
+    <thead><tr><th>Parameter</th><th>Default</th><th>Units</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>Vb</code></td><td>0.002</td><td>L</td><td>Plasma volume</td></tr>
+      <tr><td><code>Vt</code></td><td>0.0005</td><td>L</td><td>Tumor compartment</td></tr>
+      <tr><td><code>Vn</code></td><td>0.02</td><td>L</td><td>Other tissues</td></tr>
+      <tr><td><code>k_bt</code></td><td>1.0</td><td>h⁻¹</td><td>Blood–tumor exchange</td></tr>
+      <tr><td><code>k_bn</code></td><td>0.5</td><td>h⁻¹</td><td>Blood–other exchange</td></tr>
+      <tr><td><code>k_b_clr</code></td><td>0.5</td><td>h⁻¹</td><td>Plasma clearance</td></tr>
+      <tr><td><code>k_t_clr</code></td><td>0.2</td><td>h⁻¹</td><td>Tumor clearance</td></tr>
+      <tr><td><code>k_n_clr</code></td><td>0.2</td><td>h⁻¹</td><td>Other-tissue clearance</td></tr>
+      <tr><td><code>C_{baseline}</code></td><td>50</td><td>µM</td><td>Physiologic baseline</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5) Neurotoxicity Readouts</h3>
+  <ul>
+    <li>Caution threshold: 100 µM</li>
+    <li>Danger threshold: 1000 µM</li>
+    <li>Outputs: peak C<sub>b</sub>, time above thresholds, boolean flags.</li>
+  </ul>
+
+  <h3>6) Running Example</h3>
+  <pre><code>uv run -m scripts.assess_neurotoxicity</code></pre>
+  
+  <img src="https://static.igem.wiki/teams/5926/drylab/integrated-model-extracellular-glutamate-dynamics1.webp" alt="Integrated model extracellular glutamate dynamics" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px; margin-top:8px;" />
+  <div >
+    <h3>Neurotoxicity Assessment Results</h3>
+    <p>The results show that the maximum plasma glutamate concentration in the treatment group reached approximately 70–80&nbsp;µM. Although elevated compared with the control, it remained below the predefined neurotoxicity caution threshold (100&nbsp;µM). The danger threshold (1&nbsp;mM) was not reached throughout the simulation.</p>
+    <p>These findings demonstrate that the model successfully captures the process from “tumor-secreted glutamate” to “plasma concentration elevation,” while indicating that under the current parameter settings, glutamate levels do not exceed neurotoxic thresholds. By integrating pharmacokinetic simulation with neurotoxicity thresholds, this module enables quantitative risk assessment and visualization.</p>
+  </div>
+
+  <h1>Summary and Discussion</h1>
+  
+  <h3>Model Achievements</h3>
+  <p>The comprehensive modeling framework successfully integrates three mechanistically linked layers to provide quantitative support for the therapeutic design. Key achievements include:</p>
+  
+  <ul>
+    <li><strong>Environmental Logic Integration:</strong> The AND gate model demonstrates strict dual-input control (hypoxia + heat shock) with >50-fold ON/OFF ratios and experimental validation using iGEM Tsinghua 2023 BioBrick data.</li>
+    <li><strong>Metabolic Engineering Success:</strong> The glutamate metabolism model achieves target performance metrics with ≥50mM intracellular accumulation during heat shock and controlled extracellular release ≥30mM.</li>
+    <li><strong>Safety Assessment Framework:</strong> The pharmacokinetics model provides neurotoxicity risk evaluation, demonstrating plasma glutamate levels remain below safety thresholds under conservative scenarios.</li>
+    <li><strong>Quantitative Prediction:</strong> Integration of experimental data fitting with mechanistic modeling enables reliable parameter estimation and therapeutic outcome prediction.</li>
+  </ul>
+
+  <h3>Therapeutic Design Validation</h3>
+  <p>The modeling framework provides strong support for the therapeutic design strategy:</p>
+  
+  <ul>
+    <li><strong>Tumor Specificity:</strong> Dual environmental sensing (hypoxia detection + heat shock activation) ensures selective activation within tumor microenvironments while remaining inactive in healthy tissues.</li>
+    <li><strong>Controllable Therapeutics:</strong> External heat shock trigger (41-43°C, 2-4 hours) provides precise temporal control over therapeutic activation with minimal thermal stress to engineered bacteria.</li>
+    <li><strong>Dose-Response Control:</strong> Graded environmental responses enable fine-tuning of therapeutic intensity based on tumor characteristics and treatment protocols.</li>
+    <li><strong>Safety Margins:</strong> Comprehensive toxicity assessment demonstrates adequate safety margins under worst-case glutamate exposure scenarios.</li>
+  </ul>
+
+  <h3>Model Limitations and Future Directions</h3>
+  <p>While the current framework provides a robust foundation, several areas warrant future development:</p>
+  
+  <ul>
+    <li><strong>Spatial Heterogeneity:</strong> Extension to spatial models accounting for O₂, temperature, and concentration gradients within tumor microenvironments.</li>
+    <li><strong>Dynamic Interactions:</strong> Integration of host-microbe interactions, immune responses, and bacterial population dynamics in the tumor environment.</li>
+    <li><strong>Clinical Translation:</strong> Validation with clinical-grade heating protocols, patient-derived tumor models, and in vivo experimental systems.</li>
+    <li><strong>Multi-Scale Integration:</strong> Development of tissue-scale models linking cellular responses to organ-level therapeutic outcomes.</li>
+  </ul>
+
+  <h3>Impact on Synthetic Biology</h3>
+  <p>This work demonstrates the essential role of quantitative modeling in therapeutic synthetic biology. The integration of experimental data fitting, logic verification, safety assessment, and mechanistic modeling provides a comprehensive framework for developing robust biological circuits. The modular design, open-source implementation, and detailed documentation enable community validation, extension, and application to diverse therapeutic scenarios.</p>
+
+  <h3>7) References</h3>
+  <ol>
+    
+    <li>ICRP (2002). <em>Basic anatomical and physiological data for use in radiological protection: Reference values.</em> ICRP Publication 89.</li>
+    <li>Sakka, L., Coll, G., &amp; Chazal, J. (2011). <em>Anatomy and physiology of cerebrospinal fluid.</em> Eur Ann Otorhinolaryngol Head Neck Dis, 128(6), 309–316.</li>
+    <li>Rowland, M., &amp; Tozer, T. N. (2011). <em>Clinical Pharmacokinetics and Pharmacodynamics: Concepts and Applications.</em> Lippincott Williams &amp; Wilkins.</li>
+    <li>Wilkinson, G. R. (2005). <em>Drug metabolism and variability among patients in drug response.</em> N Engl J Med, 352(21), 2211–2221.</li>
+    <li>Albrecht, J., &amp; Norenberg, M. D. (2006). <em>Glutamate and ammonia toxicity in the CNS.</em> J Neurochem, 97(6), 1677–1689.</li>
+    <li>Plaitakis, A., &amp; Shashidharan, P. (2000). <em>Glutamate transport and metabolism in mammalian glial cells.</em> Int Rev Neurobiol, 45, 381–427.</li>
+    <li>Shis, D. L., & Bennett, M. R.(2013). Library of synthetic transcriptional AND gates built with split T7 RNA polymerase mutants. <em>Proceedings of the National Academy of Sciences</em>, 110(13), 5028-5033. [Foundational work on split T7 AND gate systems]</li>
+    <li>Choi, D. W. (1988). <em>Glutamate neurotoxicity and diseases of the nervous system.</em> Neuron, 1(8), 623–634.</li>
+  </ol>
+</section>
+
+
+    
+      <h3>Database Resources:</h3>
+      <ul>
+        <li><strong>BRENDA Enzyme Database:</strong> Comprehensive enzyme information
+          <ul>
+            <li>ICD (EC 1.1.1.42): <a href="https://www.brenda-enzymes.org/enzyme.php?ecno=1.1.1.42" target="_blank">https://www.brenda-enzymes.org/enzyme.php?ecno=1.1.1.42</a></li>
+            <li>GDH (EC 1.4.1.4): <a href="https://www.brenda-enzymes.org/enzyme.php?ecno=1.4.1.4" target="_blank">https://www.brenda-enzymes.org/enzyme.php?ecno=1.4.1.4</a></li>
+          </ul>
+        </li>
+        
+        <li><strong>SABIO-RK Database:</strong> Biochemical reaction kinetics
+          <ul>
+            <li>Search portal: <a href="https://sabiork.h-its.org/newSearch/index" target="_blank">https://sabiork.h-its.org/newSearch/index</a></li>
+          </ul>
+        </li>
+
+      <h3>Supporting iGEM Resources:</h3>
+      <ul>
+    
+        <li><strong>BBa_K4634000 (pPepT):</strong> Hypoxia-inducible promoter for oxygen sensing - <a href="http://parts.igem.org/Part:BBa_K4634000" target="_blank">http://parts.igem.org/Part:BBa_K4634000</a></li>
+        <li><strong>BBa_K4634017 (pLR/CI857):</strong> Temperature-sensitive promoter system - <a href="http://parts.igem.org/Part:BBa_K4634017" target="_blank">http://parts.igem.org/Part:BBa_K4634017</a></li>
+      </ul>
+
+    
+
+    <footer>
+      <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12px; color: #888;">
+        <strong>Document Information:</strong> iGEM Engineered Bacteria Glutamate Metabolism Mathematical Model Documentation | 
+        Last Updated: September 2024 | 
+        Model Version: Final Release | 
+        Status: Production Ready
+      </p>
+    </footer>
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"c96235924acb4b338a3e709648760d42","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</div>
+</body>
+</html>
+
