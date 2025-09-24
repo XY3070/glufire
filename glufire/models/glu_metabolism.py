@@ -422,14 +422,14 @@ if __name__ == '__main__':
     # === Simplified Plots ===
     try:
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        fig.suptitle('iGEM Engineered Bacteria Glutamate Metabolism Model Analysis', fontsize=16, fontweight='bold')
+        fig.suptitle('Glutamate Metabolism Model Analysis', fontsize=16, fontweight='bold')
         
         # Intracellular glutamate
-        axes[0].plot(t_eng, sol_eng[:, 4], 'r-', linewidth=2, label='Engineered')
-        axes[0].plot(t_wt, sol_wt[:, 4], 'b--', linewidth=2, label='Wild-type')
+        axes[0].plot(t_eng, sol_eng[:, 4], 'blue', linewidth=2, label='Engineered')
+        axes[0].plot(t_wt, sol_wt[:, 4], 'orange', linewidth=2, label='Wild-type')
         axes[0].axhline(y=45, color='orange', linestyle=':', alpha=0.7, label='Target≥45mM')
-        axes[0].axhline(y=20, color='green', linestyle=':', alpha=0.7, label='Recovery~20mM')
-        axes[0].axvline(x=8, color='red', linestyle='--', alpha=0.8, linewidth=1.5, label='Heat Shock Start')
+        axes[0].axhline(y=20, color='blue', linestyle=':', alpha=0.7, label='Recovery~20mM')
+        axes[0].axvline(x=8, color='orange', linestyle='--', alpha=0.8, linewidth=1.5, label='Heat Shock Start')
         axes[0].set_xlabel('Time (h)')
         axes[0].set_ylabel('Intracellular Glu (mM)')
         axes[0].set_title('Intracellular Glutamate Dynamics')
@@ -437,10 +437,10 @@ if __name__ == '__main__':
         axes[0].grid(True, alpha=0.3)
         
         # Extracellular glutamate
-        axes[1].plot(t_eng, sol_eng[:, 7], 'r-', linewidth=2, label='Engineered')
-        axes[1].plot(t_wt, sol_wt[:, 7], 'b--', linewidth=2, label='Wild-type')
+        axes[1].plot(t_eng, sol_eng[:, 7], 'blue', linewidth=2, label='Engineered')
+        axes[1].plot(t_wt, sol_wt[:, 7], 'orange', linewidth=2, label='Wild-type')
         axes[1].axhline(y=30, color='orange', linestyle=':', alpha=0.7, label='Target≥30mM')
-        axes[1].axvline(x=8, color='red', linestyle='--', alpha=0.8, linewidth=1.5, label='Heat Shock Start')
+        axes[1].axvline(x=8, color='orange', linestyle='--', alpha=0.8, linewidth=1.5, label='Heat Shock Start')
         axes[1].set_xlabel('Time (h)')
         axes[1].set_ylabel('Extracellular Glu (mM)')
         axes[1].set_title('Extracellular Glutamate Dynamics')
@@ -448,8 +448,8 @@ if __name__ == '__main__':
         axes[1].grid(True, alpha=0.3)
         
         # Key metabolites
-        axes[2].plot(t_eng, sol_eng[:, 3], 'purple', linewidth=2, label='AKG')
-        axes[2].plot(t_eng, sol_eng[:, 5], 'brown', linewidth=2, label='NADPH')
+        axes[2].plot(t_eng, sol_eng[:, 3], 'blue', linewidth=2, label='AKG')
+        axes[2].plot(t_eng, sol_eng[:, 5], 'orange', linewidth=2, label='NADPH')
         axes[2].set_xlabel('Time (h)')
         axes[2].set_ylabel('Concentration (mM)')
         axes[2].set_title('Key Metabolites')

@@ -156,7 +156,7 @@ class SimpleANDGate:
         # Add experimental data points
         exp_O2 = [1.0, 2.0, 5.0, 10.0, 21.0]
         exp_pPepT = [self._hill_function(o2, self.promoter_params['pPepT']) for o2 in exp_O2]
-        ax1.scatter(exp_O2, exp_pPepT, color='red', s=60, zorder=5, label='Data Points')
+        ax1.scatter(exp_O2, exp_pPepT, color='orange', s=60, zorder=5, label='Data Points')
         
         ax1.set_xlabel('Oxygen (%)')
         ax1.set_ylabel('pPepT Activity')
@@ -168,7 +168,7 @@ class SimpleANDGate:
         T_range = np.linspace(30, 50, 100)
         pLR_response = self._temperature_response_function(T_range, self.promoter_params['pLR'])
         
-        ax2.plot(T_range, pLR_response, 'r-', linewidth=2, label='pLR Response')
+        ax2.plot(T_range, pLR_response, 'orange', linewidth=2, label='pLR Response')
         # Add experimental data points
         exp_T = [37.0, 39.0, 42.0, 43.0, 45.0]
         exp_pLR = [self._temperature_response_function(t, self.promoter_params['pLR']) for t in exp_T]
@@ -189,7 +189,7 @@ class SimpleANDGate:
         # Ensure reasonable data range
         print(f"T7 activity range: {np.min(T7_activity):.1f} - {np.max(T7_activity):.1f}")
         
-        im = ax3.contourf(O2_grid, Temp_grid, T7_activity, levels=20, cmap='viridis')
+        im = ax3.contourf(O2_grid, Temp_grid, T7_activity, levels=20, cmap='Blues_r')
         ax3.set_xscale('log')
         ax3.set_xlim(O2_levels.min(), O2_levels.max()+2)  # Explicitly set x-axis range
         ax3.set_ylim(Temp_levels.min(), Temp_levels.max())  # Explicitly set y-axis range
@@ -199,8 +199,8 @@ class SimpleANDGate:
         
         # Add key condition markers
         conditions = [
-            (1.0, 42.0, "ON", "red"), 
-            (1.0, 37.0, "OFF", "blue"),
+            (1.0, 42.0, "ON", "blue"), 
+            (1.0, 37.0, "OFF", "orange"),
             (18.0, 37.0, "OFF", "orange"),
             
         ]
@@ -221,12 +221,12 @@ class SimpleANDGate:
         # Calculate T7 activity over time (assuming low oxygen condition 1%)
         t7_activity = [self.get_t7_activity(1.0, t) for t in temp_profile]
         
-        ax4.plot(time, t7_activity, 'g-', linewidth=2, label='T7 Activity')
+        ax4.plot(time, t7_activity, 'b-', linewidth=2, label='T7 Activity')
         ax4_temp = ax4.twinx()
-        ax4_temp.plot(time, temp_profile, 'r--', linewidth=1, alpha=0.7, label='Temperature')
+        ax4_temp.plot(time, temp_profile, 'orange', linestyle='--', linewidth=1, alpha=0.7, label='Temperature')
         
         # Add treatment window marker
-        ax4.axvspan(4, 6, alpha=0.2, color='red', label='Treatment Window')
+        ax4.axvspan(4, 6, alpha=0.2, color='orange', label='Treatment Window')
         
         ax4.set_xlabel('Time (hours)')
         ax4.set_ylabel('T7 Activity', color='g')
@@ -257,7 +257,7 @@ class SimpleANDGate:
         T7_activity = self.get_t7_activity(O2_grid, Temp_grid)
         
         fig, ax = plt.subplots(figsize=(10, 8))
-        im = ax.contourf(O2_grid, Temp_grid, T7_activity, levels=20, cmap='viridis')
+        im = ax.contourf(O2_grid, Temp_grid, T7_activity, levels=20, cmap='Blues_r')
         
         ax.set_title('AND Gate Response Heatmap', fontsize=14, fontweight='bold')
         ax.set_xlabel('Oxygen Level (%)')
@@ -271,9 +271,9 @@ class SimpleANDGate:
         
         # Add key condition markers
         conditions = [
-            (1.0, 42.0, "ON", "red"),
-            (21.0, 37.0, "OFF", "blue"),
-            (1.0, 37.0, "OFF", "blue")
+            (1.0, 42.0, "ON", "blue"),
+            (21.0, 37.0, "OFF", "orange"),
+            (1.0, 37.0, "OFF", "orange")
         ]
         
         for o2, temp, label, color in conditions:

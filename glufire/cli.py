@@ -6,7 +6,7 @@ import json # Import the json module
 
 from glufire.models.and_gate import SimpleANDGate
 from glufire.models.diffusion_pk_neurotoxicity import simulate_three_comp_pk, assess_neurotoxicity, PKParams, ToxicityThresholds, trapezoid_flux, _plot_and_save
-from glufire.models.glu_metabolism_en import GluModel, create_heat_shock_protocol
+from glufire.models.glu_metabolism import GluModel, create_heat_shock_protocol
 
 
 @click.group()
@@ -149,10 +149,10 @@ def glu_metabolism(strain, t_end, dt, shock_start, shock_duration, t7_low, t7_hi
         fig.suptitle(f'{strain.capitalize()} Strain Glutamate Metabolism Analysis', fontsize=16, fontweight='bold')
 
         # Intracellular glutamate
-        axes[0].plot(t, solution[:, 4], 'r-', linewidth=2, label='Intracellular Glu')
+        axes[0].plot(t, solution[:, 4], 'b-', linewidth=2, label='Intracellular Glu')
         axes[0].axhline(y=45, color='orange', linestyle=':', alpha=0.7, label='Target>=45mM')
         axes[0].axhline(y=20, color='green', linestyle=':', alpha=0.7, label='Recovery~20mM')
-        axes[0].axvline(x=shock_start, color='red', linestyle='--', alpha=0.8, linewidth=1.5, label='Heat Shock Start')
+        axes[0].axvline(x=shock_start, color='orange', linestyle='--', alpha=0.8, linewidth=1.5, label='Heat Shock Start')
         axes[0].set_xlabel('Time (h)')
         axes[0].set_ylabel('Intracellular Glu (mM)')
         axes[0].set_title('Intracellular Glutamate Dynamics')
@@ -162,7 +162,7 @@ def glu_metabolism(strain, t_end, dt, shock_start, shock_duration, t7_low, t7_hi
         # Extracellular glutamate
         axes[1].plot(t, solution[:, 7], 'r-', linewidth=2, label='Extracellular Glu')
         axes[1].axhline(y=30, color='orange', linestyle=':', alpha=0.7, label='Target>=30mM')
-        axes[1].axvline(x=shock_start, color='red', linestyle='--', alpha=0.8, linewidth=1.5, label='Heat Shock Start')
+        axes[1].axvline(x=shock_start, color='orange', linestyle='--', alpha=0.8, linewidth=1.5, label='Heat Shock Start')
         axes[1].set_xlabel('Time (h)')
         axes[1].set_ylabel('Extracellular Glu (mM)')
         axes[1].set_title('Extracellular Glutamate Dynamics')
@@ -171,7 +171,7 @@ def glu_metabolism(strain, t_end, dt, shock_start, shock_duration, t7_low, t7_hi
 
         # Key metabolites
         axes[2].plot(t, solution[:, 3], 'purple', linewidth=2, label='AKG')
-        axes[2].plot(t, solution[:, 5], 'brown', linewidth=2, label='NADPH')
+        axes[2].plot(t, solution[:, 5], 'blue', linewidth=2, label='NADPH')
         axes[2].set_xlabel('Time (h)')
         axes[2].set_ylabel('Concentration (mM)')
         axes[2].set_title('Key Metabolites')

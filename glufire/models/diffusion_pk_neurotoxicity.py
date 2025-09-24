@@ -202,8 +202,8 @@ def _plot_and_save(t_h: np.ndarray,
     fig, ax = plt.subplots(figsize=(9, 5))
 
     # Main axis: plasma curves
-    ax.plot(t_h, Cb, label="Plasma Glu (treatment)")
-    ax.plot(t_h, Cb_ctrl, "--", alpha=0.9, label="Plasma Glu (control)")
+    ax.plot(t_h, Cb, color='blue', label="Plasma Glu (treatment)")
+    ax.plot(t_h, Cb_ctrl, color='orange', linestyle="--", alpha=0.9, label="Plasma Glu (control)")
 
     # Choose y-limits to show baseline and thresholds
     span = float(max(Cb.max(), Cb_ctrl.max()) - min(Cb.min(), Cb_ctrl.min()))
@@ -234,7 +234,7 @@ def _plot_and_save(t_h: np.ndarray,
         ax2.set_ylim(ax.get_ylim())
     ax.callbacks.connect('ylim_changed', _sync_ylim)
 
-    ax2.axvspan(t_on, t_off, alpha=0.08, label="Tumor secretion window")
+    ax2.axvspan(t_on, t_off, alpha=0.15, color='blue', label="Tumor secretion window")
 
     # Merge legends
     handles, labels = [], []
