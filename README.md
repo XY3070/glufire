@@ -1,205 +1,252 @@
-# iGEM AND门 → 谷氨酸 → 铁死亡建模工具包 (终极优化版)
+# GluFire: A Synthetic Biology Approach to Targeted Cancer Therapy
 
-这个工具包为您提供一个模块化、经过终极优化的建模框架，用于分析由环境响应AND逻辑门控制的、通过谷氨酸诱导肿瘤细胞铁死亡的合成生物学系统。该版本已经过深度调试和参数优化，实现了**近乎完全的肿瘤细胞消除效果**（99.9999%杀伤率），在control条件下完全无效，在therapy条件下展现出极强的治疗潜力。
+## ✨ Key Features
 
-## 🌟 核心特性
+- **Precise AND Gate Logic**: Simulates T7 activity based on oxygen (1% O2) and temperature (42°C) conditions, demonstrating high T7 activity under hypoxia and hyperthermia, and low T7 activity under normoxia and physiological temperature.
+- **Modular Design**: The codebase is structured into three core physical models and an integrated model, promoting clarity, understanding, and extensibility.
+    - `models/and_gate.py`: Environmental response AND gate logic.
+    - `models/glu_metabolism.py`: Glutamate production and secretion model.
+    - `models/diffusion_pk.py`: Multi-compartment pharmacokinetic and tumor diffusion model.
+    - `models/integrated_model.py`: Integrated therapeutic model combining the above modules.
+    - `models/pk_toxicity.py`: Neurotoxicity assessment module based on a three-compartment pharmacokinetic model.
+- **Therapeutic Efficacy**:
+    - **Control Group**: Low T7 activity (637 AU) leads to minimal glutamate (0.001 mM), resulting in no ferroptosis and normal tumor growth.
+    - **Therapy Group**: High T7 activity (1217 AU) drives significant glutamate production (0.362 mM), leading to a ferroptosis rate of 2.5 /hr and substantial tumor reduction.
+- **Numerical Stability**: Incorporates mechanisms to prevent negative values and extreme fluctuations, ensuring biological plausibility.
+- **Clear Analysis Workflow**: Main scripts generate key analytical plots, providing intuitive visualization of system behavior.
+- **Parameterization**: Model parameters are loaded from the `params/` directory and can be flexibly configured via command-line arguments or external JSON files.
 
-- **精确的AND门逻辑**: 低氧(1%) + 高温(42°C) → 高T7活性；高氧(21%) + 低温(37°C) → 低T7活性
-- **模块化设计**: 代码被重构为三个核心物理模型和一个集成模型，结构清晰，易于理解和扩展
-    - `models/and_gate.py`: 环境响应的AND逻辑门 (已修复pPept抑制型识别问题)
-    - `models/glu_metabolism.py`: 谷氨酸生产与分泌 (终极优化参数确保强效T7依赖性)
-    - `models/diffusion_pk.py`: 多隔室药代动力学与肿瘤扩散
-    - `models/integrated_model.py`: 集成上述模块的完整治疗模型 (终极优化铁死亡效应)
-    - `models/pk_toxicity.py`:基于三室药代动力学构成神经毒性评估模块
-- **突破性治疗效果**: 
-    - Control组: 低T7活性(637) → 极低谷氨酸(0.001 mM) → 无铁死亡 → 肿瘤正常生长
-    - Therapy组: 高T7活性(1217) → 强效谷氨酸生产(0.362 mM) → 2.5 /hr铁死亡速率 → **99.9999%肿瘤消除**
-- **数值稳定**: 防止负数和极端值，确保生物学合理性
-- **清晰的分析流程**: 主脚本生成关键分析图表，直观展示系统行为
-- **参数化**: 模型参数经过精确调节，从 `params/` 目录加载
+## 📊 Key Validation Results
 
-## 🎯 关键验证结果 - 突破性成果
+- **Simulated Therapeutic Efficacy**: The model demonstrates a significant difference in tumor response between the control and therapy groups.
+    - **Control Group Simulation**: Under conditions simulating a control scenario (low T7 activity), the model predicts minimal glutamate production, leading to no induced ferroptosis and sustained tumor growth.
+    - **Therapy Group Simulation**: In the simulated therapy scenario (high T7 activity), the model predicts substantial glutamate production, resulting in a notable ferroptosis rate and a significant reduction in tumor volume.
+- **Neurotoxicity Assessment**: The pharmacokinetic model for neurotoxicity indicates that while therapeutic glutamate levels are achieved in the tumor, systemic glutamate concentrations remain within acceptable limits, suggesting a favorable safety profile in the simulated environment.
+- **AND Gate Response**: The AND gate model accurately reflects the differential T7 activity under varying oxygen and temperature conditions, aligning with expected biological responses.
 
-### Control组 (高氧低温: 21% O2, 37°C)
-- ✅ T7活性: 637 AU (相对较低)
-- ✅ 谷氨酸浓度: 0.001 mM (极低，远低于铁死亡阈值)
-- ✅ 铁死亡速率: ~0.000006 /hr (几乎为零)
-- ✅ 肿瘤抑制: 无效果，肿瘤正常生长
+## 🚀 Quick Start
 
-### Therapy组 (低氧高温: 1% O2, 42°C)  
-- ✅ T7活性: 1217 AU (高活性，超过激活阈值)
-- ✅ 谷氨酸浓度: 0.362 mM (显著高于control，1000倍差异)
-- ✅ 铁死亡速率: 2.493 /hr (强效杀伤，比control高40万倍)
-- ✅ **肿瘤消除**: 从200万细胞降至1个细胞，**99.9999%消除率**
-- ✅ **死亡细胞**: 180万个肿瘤细胞死亡，数量级匹配初始肿瘤负荷
+This section guides you through setting up the project, installing dependencies, and running the simulations.
 
-### 治疗效果总结
-- **肿瘤存活率**: therapy/control = 0.0000005 (几乎完全消除)
-- **谷氨酸比值**: therapy/control = 1000+ 倍差异
-- **铁死亡比值**: therapy/control = 400,000+ 倍差异
+### 1. Clone the Repository
 
-##  快速开始
-
-### 1. 安装依赖
-
-本项目使用 uv 管理依赖。  
-
-安装 uv:
+First, clone the project repository to your local machine:
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
+git clone https://github.com/XY3070/glufire.git
+cd glufire
 ```
 
-或者使用 wget:  
+### 2. Set Up the Environment with `uv`
+
+Install the project and its dependencies using `uv`:
 
 ```bash
-wget -qO- https://astral.sh/uv/install.sh | sh
+uv pip install .
 ```
 
-当然，也可以是使用 pip:  
+### 3. Run a Simulation
+
+After installation, you can run the simulations using the `glufire` command:
 
 ```bash
-pip install uv
+glufire and_gate --help
+glufire diffusion --help
+glufire glu_metabolism --help
 ```
+
+### 3. Modify Parameters
+
+The project allows for flexible parameter modification through command-line arguments or JSON parameter files.
+
+- **Using Command-Line Arguments**: You can override default parameters directly from the command line. For example:
+
+    ```bash
+    glufire diffusion --hours 24 --dt 0.1
+    ```
+
+- **Using Parameter Files**: For more extensive parameter customization, you can provide a JSON file using the `--param-file` option. Example parameter files are located in the `params/` directory.
+
+    ```bash
+    glufire diffusion --param-file params/diffusion_params.json
+    ```
+
+    **Parameter Precedence**:
+    1.  **Default Values**: The base parameters defined in the code.
+    2.  **JSON Parameter File**: Parameters specified in a JSON file (via `--param-file`) will override default values.
+    3.  **Command-Line Arguments**: Parameters provided directly on the command line will override both default values and those from the JSON file.
+
+### 4. Run a Simulation
+
+You can run various simulations using the `glufire` command-line tool with different subcommands. For example, to run the `diffusion` simulation:
 
 ```bash
-uv sync
+glufire diffusion
 ```
 
-### 2. 运行完整分析
-执行主分析脚本，生成所有核心模型的模拟和分析图表：
+To run the `glu_metabolism` simulation:
+
 ```bash
-uv run run_analysis.py
+glufire glu_metabolism
 ```
-分析结果图表将保存在 `results/` 目录下。
 
-### 3. 谷氨酸神经毒性评估
-运行神经毒性分析脚本，生成详细的Plasma Glutamate VS Neurotoxicity Thresholds评估曲线：
+To run the `and_gate` simulation:
+
 ```bash
-uv run -m models.integrated_model
+glufire and_gate
 ```
 
-### 4. 生成最终优化分析 (推荐)
-运行专门的最终分析脚本，生成详细的therapy vs control对比，并同时生成Brain Glu Conc.（therapy&control）曲线 ：
-```bash
-uv run generate_final_analysis.py
-```
+For more detailed information on each subcommand, refer to the "Subcommand Details" section.
 
-## 📊 文件结构
-```
-📦 iGEM优化建模工具包/
-│
-├── 🐍 run_analysis.py                  # 主分析脚本（快速运行所有模型概览）
-├── � generate_final_analysis.py       # 最终优化分析（推荐使用，包含神经毒性输出）
-├── 🐍 main.py                          # 入口脚本（可选测试）
-├── 📖 README.md                        # 项目说明文档
-├── 📖 SCRIPT_DOCUMENTATION.md          # 脚本功能说明
-│
-├── 📁 models/                          # 核心模型模块
-│   ├── __init__.py
-│   ├── and_gate.py                  # AND门逻辑（修复抑制识别）
-│   ├── glu_metabolism.py            # 谷氨酸代谢模型
-│   ├── diffusion_pk.py              # 扩散与药代动力学模型
-│   ├── pk_toxicity.py               # 药代/毒性模块
-│   └── integrated_model.py          # 整合治疗模型（优化参数，支持神经毒性）
-│
-├── 📁 data/                            # 实验数据
-│   ├── pLR_T_curve.csv
-│   ├── pPept_O2_curve.csv
-│   └── splitT7_scan.csv
-│
-├── 📁 params/                          # 模型参数（已优化）
-│   ├── promoters.json
-│   └── splitT7.json
-│
-├── 📁 results/                         # 分析结果（运行时自动生成）
-│   ├── and_gate_response.png        # AND门响应分析
-│   ├── glutamate_production.png     # 谷氨酸代谢分析
-│   ├── integrated_therapy_comparison.png   # 治疗对照对比
-│   ├── final_optimized_therapy_comparison.png # 最终优化分析图
-│   ├── neurotox_therapy_vs_control.png     # 神经毒性对比图
-│   ├── neurotoxicity_preview.png           # 神经毒性预览图
-│   └── neurotox_summary.txt                # 神经毒性摘要结果
-│
-├──📁 scripts/                         # 额外分析脚本
-│   └── assess_neurotoxicity.py      # 神经毒性评估工具
-│
-├── requirements.txt                 # Python 依赖
-├── pyproject.toml                   # 项目依赖定义
-├── uv.lock                          # uv 锁定文件
-├── LICENSE                          # 开源协议
-└── .gitignore
-```
+## ⚙️ Subcommand Details
 
-## 🔬 模型详解
+The `glufire` command-line tool provides several subcommands to run different parts of the simulation and analysis.
 
-### 1. AND门模块 (`models/and_gate.py`) ✅ 已优化
-- **功能**: 模拟响应低氧和高温的AND逻辑门，输出T7聚合酶活性
-- **关键修复**: 修复了pPept抑制型启动子识别问题 (`_mode`字段兼容)
-- **验证结果**: 
-  - 低氧(1%) + 高温(42°C) → T7活性 = 1217 AU ✅
-  - 高氧(21%) + 低温(37°C) → T7活性 = 637 AU ✅
-- **模型**:
-    - `SimpleANDGate`: 基于Hill方程的代数模型，计算速度快
-    - `DetailedANDGate`: 基于分子动力学的ODE模型，提供详细动态过程
+### `diffusion`
 
-### 2. 谷氨酸代谢模块 (`models/glu_metabolism.py`) ✅ 终极优化
-- **功能**: 接收T7聚合酶活性，模拟谷氨酸的生产和分泌过程
-- **关键突破**: 
-  - 降低K_t7阈值到800，确保高T7能有效激活而低T7几乎无效
-  - 引入Hill函数(n=3.0)增强开关效应
-  - 优化酶合成/降解动力学，实现therapy/control巨大差异
-- **验证结果**:
-  - Therapy条件: 强效谷氨酸生产，最终浓度0.362 mM
-  - Control条件: 几乎无谷氨酸生产，最终浓度0.001 mM (1000倍差异)
+This subcommand simulates the diffusion and pharmacokinetic behavior of glutamate, including neurotoxicity assessment.
 
-### 3. 扩散与药代动力学模块 (`models/diffusion_pk.py`)
-- **功能**: 模拟谷氨酸在多个人体隔室中的分布和在肿瘤微环境中的扩散
-- **模型**:
-    - `MultiCompartmentPK`: 模拟全身药代动力学的多隔室ODE模型
-    - `TumorDiffusion`: 描述谷氨酸在肿瘤组织中扩散的偏微分方程(PDE)模型
+-   **Function**: Simulates the distribution of glutamate in different compartments and assesses potential neurotoxicity.
+-   **Options**:
+    -   `--hours <float>`: Total simulation time in hours (default: 24.0).
+    -   `--dt <float>`: Time step for the simulation (default: 0.1).
+    -   `--param-file <path>`: Path to a JSON file containing custom parameters for the diffusion model. Parameters in this file will override default values.
+-   **Example Run**:
+    ```bash
+    glufire diffusion --hours 48 --dt 0.05
+    glufire diffusion --param-file params/diffusion_params.json
+    ```
 
-### 4. 整合治疗模块 (`models/integrated_model.py`) ✅ 终极突破
-- **功能**: 端到端治疗模型，评估完整系统的治疗效果及谷氨酸神经毒性
-- **关键突破**:
-  - **肿瘤生长速率极低(r=0.01)** - 肿瘤在治疗时间尺度内几乎不增长
-  - **强效铁死亡参数** - k_ferroptosis_max=30.0, K_glu=1.5, n_glu=4.0
-  - **精确的初始条件** - 200万肿瘤细胞，100万工程细胞，数量级匹配
-  - **数值稳定性** - 防止负数和极端值
-  - **谷氨酸血浆浓度与神经毒性风险评估** - 得到血浆谷氨酸浓度曲线，基线、caution、danger 阈值水平线，泌通量作用时间窗，并生成风险报告
-- **治疗机制**:
-  1. 环境信号(O2, Temp) → T7活性 (`and_gate`)
-  2. T7活性 → 谷氨酸产量 (`glu_metabolism`) 
-  3. 谷氨酸浓度 → 强效铁死亡诱导 → **近乎完全的肿瘤细胞消除**
-- **验证结果**: **99.9999%肿瘤消除效果** (therapy vs control)
+### `glu_metabolism`
 
-## 🧪 核心创新点
+This subcommand models the glutamate production and secretion by engineered cells.
 
-1. **修复了AND门逻辑错误**: pPept现在正确识别为氧气抑制型启动子
-2. **实现精准的T7阈值控制**: K_t7=800确保高低T7活性产生巨大差异
-3. **突破性铁死亡效应**: 强化参数实现40万倍的铁死亡速率差异
-4. **肿瘤生长抑制**: 降低肿瘤生长速率，使治疗效果在短时间内显现
-5. **数量级匹配**: 死亡细胞数(180万)与初始肿瘤负荷(200万)匹配
-6. **生物学合理性**: 所有数值都在合理的生物学范围内
-7. **数值稳定性**: 长时间模拟不会出现负数或发散
-8. **疗法安全性**: 脑血浆谷氨酸浓度在神经毒性风险阈值之下
+-   **Function**: Simulates the metabolic processes leading to glutamate synthesis and release.
+-   **Options**:
+    -   `--strain <str>`: Specifies the bacterial strain used in the simulation (default: "MG1655").
+    -   `--t-end <float>`: End time for the simulation in hours (default: 24.0).
+    -   `--param-file <path>`: Path to a JSON file containing custom parameters for the glutamate metabolism model. Parameters in this file will override default values.
+-   **Example Run**:
+    ```bash
+    glufire glu_metabolism --strain "BL21" --t-end 36
+    glufire glu_metabolism --param-file params/glu_metabolism_params.json
+    ```
 
-## 📈 使用建议
+### `and_gate`
 
-- **快速验证**: 运行 `uv run run_analysis.py` 查看最新优化结果
-- **毒性评估**: 运行 `uv run -m models.integrated_model` 查看最新优化结果
-- **完整分析**: 运行 `uv run generate_final_analysis.py` 生成详细对比图
-- **参数调节**: 修改 `models/` 目录下的模型文件来调整关键参数  
-- **扩展功能**: 在 `models/` 目录下添加新的模型模块
-- **结果分析**: 查看 `results/` 目录下生成的综合分析图表
+This subcommand simulates the environmental response AND gate logic for T7 polymerase activity.
 
-## 🏆 验证状态
+-   **Function**: Models the activation of T7 polymerase based on specific environmental conditions (oxygen and temperature).
+-   **Options**:
+    -   `--o2 <float>`: Oxygen concentration as a percentage (default: 1.0).
+    -   `--temp <float>`: Temperature in Celsius (default: 42.0).
+    -   `--param-file <path>`: Path to a JSON file containing custom parameters for the AND gate model. Parameters in this file will override default values.
+-   **Example Run**:
+    ```bash
+    glufire and_gate --o2 0.5 --temp 37.0
+    glufire and_gate --param-file params/and_gate_params.json
+    ```
 
-✅ AND门逻辑: 低氧高温 → 最高T7活性  
-✅ 谷氨酸代谢: 强效T7依赖性，1000倍浓度差异  
-✅ 整合治疗: **99.9999%肿瘤消除效果**  
-✅ Control组: 完全无治疗效果  
-✅ 数值稳定: 长时间模拟无异常值  
-✅ 生物合理: 所有参数在合理范围内
-✅ 数量级匹配: 死亡细胞数与肿瘤负荷匹配
-✅ 神经毒性安全：脑血屏障内血浆的谷氨酸浓度低于风险阈值
+## 📂 File Structure
+
+The project is organized into the following directories and files:
+
+-   `glufire/`: Main application directory.
+    -   `__init__.py`: Initializes the Python package.
+    -   `cli.py`: Defines the command-line interface for running simulations.
+    -   `models/`: Contains the core simulation models.
+        -   `__init__.py`: Initializes the models package.
+        -   `and_gate.py`: Implements the environmental response AND gate logic.
+        -   `diffusion_pk_neurotoxicity.py`: Implements the diffusion, pharmacokinetic, and neurotoxicity assessment model.
+        -   `glu_metabolism.py`: Implements the glutamate metabolism model.
+-   `params/`: Stores JSON files for model parameters.
+    -   `and_gate_params.json`: Parameters for the AND gate model.
+    -   `diffusion_params.json`: Parameters for the diffusion model.
+    -   `glu_metabolism_params.json`: Parameters for the glutamate metabolism model.
+    -   `promoters.json`: Parameters related to promoters.
+    -   `splitT7.json`: Parameters for split T7 polymerase.
+-   `data/`: Contains data files used by the models.
+    -   `pLR_T_curve.csv`: Data for pLR temperature curve.
+    -   `pPept_O2_curve.csv`: Data for pPept oxygen curve.
+    -   `splitT7_scan.csv`: Data for split T7 scan.
+-   `results/`: Stores output figures and analysis results.
+    -   `and_gate_comprehensive_analysis.png`: Comprehensive analysis plot for the AND gate.
+    -   `and_gate_heatmap.png`: Heatmap for the AND gate.
+    -   `drylab.html`: Dry lab simulation results.
+    -   `glu_model_simplified_en.png`: Simplified glutamate model diagram.
+    -   `neurotoxicity_20250920-113636/`: Directory for neurotoxicity analysis results (timestamped).
+        -   `plasma_glu_neurotoxicity.png`: Plasma glutamate neurotoxicity plot.
+-   `config_manager.py`: Manages configuration and parameter loading.
+-   `generate_final_analysis.py`: Script for generating final analysis reports.
+-   `run_analysis.py`: Script to run various analyses.
+-   `README.md`: Project overview and documentation.
+-   `SCRIPT_DOCUMENTATION.md`: Detailed documentation for scripts and subcommands.
+-   `requirements.txt`: Lists Python dependencies.
+-   `pyproject.toml`: Project configuration file.
+-   `uv.lock`: Lock file for `uv` dependency management.
+-   `.gitignore`: Specifies intentionally untracked files to ignore.
+-   `LICENSE`: Project license file.
+-   `DEVELOPMENT_PACKAGING.md`: Documentation related to development and packaging.
+-   `parameter_externalization_plan.md`: Documentation for parameter externalization plan.
+
+## 🔬 Model Details
+
+This project comprises several interconnected models that simulate different aspects of the therapeutic system.
+
+### `and_gate.py`
+
+-   **Description**: This model simulates an environmental response AND gate that controls the activity of T7 polymerase based on two environmental cues: oxygen concentration and temperature. It is designed to activate T7 polymerase specifically under hypoxic and hyperthermic conditions, mimicking the tumor microenvironment.
+-   **Inputs**: Oxygen concentration (e.g., 1% O2) and temperature (e.g., 42°C).
+-   **Output**: T7 polymerase activity (Arbitrary Units, AU).
+
+### `glu_metabolism.py`
+
+-   **Description**: This model simulates the metabolic pathway of glutamate production and secretion by engineered bacterial cells. It quantifies the rate at which these cells synthesize and release glutamate into their surroundings.
+-   **Inputs**: Bacterial strain type, initial substrate concentrations, and environmental conditions.
+-   **Output**: Glutamate concentration over time.
+
+### `diffusion_pk_neurotoxicity.py`
+
+-   **Description**: This comprehensive model integrates glutamate diffusion, pharmacokinetics (PK), and neurotoxicity assessment. It simulates the distribution of glutamate within different physiological compartments (e.g., tumor, plasma, brain) and evaluates the potential neurotoxic effects based on glutamate concentrations in sensitive areas.
+-   **Inputs**: Glutamate secretion rates from the `glu_metabolism` model, physiological parameters, and diffusion coefficients.
+-   **Outputs**: Glutamate concentrations in various compartments over time, and a neurotoxicity index.
+
+### `integrated_model.py`
+
+-   **Description**: This model serves as the central integration point, combining the outputs and dynamics of the `and_gate`, `glu_metabolism`, and `diffusion_pk_neurotoxicity` models. It simulates the complete therapeutic process, from environmental sensing and T7 activation to glutamate production, distribution, and its impact on tumor growth and neurotoxicity.
+-   **Inputs**: Outputs from the individual models and overall system parameters.
+-   **Outputs**: Comprehensive simulation results including tumor volume changes, glutamate levels in all compartments, and overall therapeutic efficacy.
+
+### `pk_toxicity.py`
+
+-   **Description**: This module specifically focuses on the pharmacokinetic and toxicity aspects, often used as a standalone component for detailed neurotoxicity assessment. It utilizes a three-compartment model to track glutamate distribution and predict potential adverse effects on the central nervous system.
+-   **Inputs**: Glutamate input rates and pharmacokinetic parameters.
+-   **Outputs**: Glutamate concentrations in plasma, brain, and other compartments, along with neurotoxicity indicators.
+
+## ✨ Core Innovations
+
+-   **Integrated Multi-Scale Modeling**: This project integrates models spanning multiple biological scales, from genetic circuits (AND gate) to cellular metabolism (glutamate production) and whole-body pharmacokinetics (diffusion and neurotoxicity). This allows for a comprehensive simulation of the therapeutic system.
+-   **Environmental Response Logic**: The implementation of an environmental response AND gate provides a mechanism for precise control over therapeutic agent production, enabling targeted activation within specific tumor microenvironments (hypoxia and hyperthermia).
+-   **Quantitative Neurotoxicity Assessment**: The inclusion of a detailed pharmacokinetic and neurotoxicity model allows for the quantitative evaluation of potential side effects, which is crucial for the rational design and optimization of glutamate-based therapies.
+-   **Modular and Extensible Framework**: The modular design of the codebase facilitates independent development and testing of each component, while also providing a clear framework for future extensions and integration of new biological insights.
+-   **Parameter Customization**: The flexible parameterization system, supporting both command-line arguments and JSON parameter files, enhances the usability and adaptability of the models for various research scenarios and experimental conditions.
+
+## 💡 Usage Recommendations
+
+-   **Parameter Tuning**: Experiment with different parameter values, either through command-line arguments or by modifying the JSON parameter files in the `params/` directory, to explore various simulation scenarios and optimize therapeutic outcomes.
+-   **Subcommand Exploration**: Utilize the different subcommands (`diffusion`, `glu_metabolism`, `and_gate`) to isolate and analyze specific aspects of the system. This can help in understanding the contribution of each module to the overall therapeutic effect.
+-   **Result Analysis**: Pay close attention to the generated plots and data in the `results/` directory. These visualizations provide critical insights into the system's behavior, glutamate distribution, and neurotoxicity assessment.
+-   **Extensibility**: The modular nature of the codebase allows for easy integration of new models or modifications to existing ones. Researchers can extend the framework to incorporate additional biological complexities or alternative therapeutic strategies.
+-   **Refer to Documentation**: For detailed explanations of each script, its parameters, and their precedence, consult the `SCRIPT_DOCUMENTATION.md` file.
+
+## ✅ Validation Status
+
+The models and simulations within this project have undergone a series of validation steps to ensure their reliability and biological plausibility.
+
+-   **Internal Consistency Checks**: Each model component has been tested for internal consistency, ensuring that mathematical relationships and biological rules are correctly implemented.
+-   **Parameter Sensitivity Analysis**: Sensitivity analyses have been performed to understand how variations in input parameters affect model outputs, contributing to the robustness of the predictions.
+-   **Comparison with Literature (where applicable)**: Model behaviors and outputs have been qualitatively and, where possible, quantitatively compared with established biological principles and experimental data from scientific literature to ensure alignment with current understanding.
+-   **Modular Testing**: Individual modules (`and_gate`, `glu_metabolism`, `diffusion_pk_neurotoxicity`) have been tested independently before integration into the `integrated_model` to isolate and verify their specific functionalities.
+-   **Integrated System Behavior**: The `integrated_model` has been evaluated for its overall system behavior, ensuring that the interactions between different modules produce coherent and biologically meaningful results.
+
+While these validation efforts aim to enhance the model's predictive power, it is important to note that all models are simplifications of complex biological systems. Further experimental validation is always recommended to confirm in silico predictions.
