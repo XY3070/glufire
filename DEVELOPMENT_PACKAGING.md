@@ -104,6 +104,30 @@
 
 ## CLI 使用说明
 
+为了能够直接在命令行中运行 `glufire` 命令（例如 `glufire --help`），您需要确保 Python 解释器能够找到 `glufire` 包。这通常通过设置 `PYTHONPATH` 环境变量来实现。
+
+**设置 PYTHONPATH 环境变量 (Windows PowerShell):**
+
+在 PowerShell 中，您可以使用以下命令将项目根目录添加到 `PYTHONPATH`：
+
+```powershell
+$env:PYTHONPATH = "D:\pythonProject\glufire"
+```
+
+**重要提示:**
+
+*   上述命令仅对当前的 PowerShell 会话有效。如果您关闭终端或打开新的终端，需要重新执行此命令。
+*   如果您希望 `PYTHONPATH` 永久生效，您需要将其添加到系统环境变量中。具体操作请参考 Windows 操作系统文档。
+*   在某些情况下，即使设置了 `PYTHONPATH`，系统可能仍然无法直接识别 `glufire` 命令。此时，您可以使用 `python -m glufire.cli <command> [OPTIONS]` 的形式来执行 CLI 命令，例如：
+    ```bash
+    python -m glufire.cli --help
+    python -m glufire.cli and-gate --help
+    ```
+    这种方式更加健壮，因为它直接告诉 Python 解释器去哪里找并执行模块，不依赖于系统 `PATH` 环境变量中 `glufire` 可执行文件的位置。
+
+---
+
+
 `glufire` 包安装完成后，您可以通过命令行访问其核心功能。主命令是 `glufire`，它提供了三个子命令：`and-gate`、`glu-metabolism` 和 `diffusion`。
 
 ### 1. `glufire and-gate`

@@ -46,6 +46,7 @@
   - `ramp_hours`: 谷氨酸通量上升和下降的持续时间 (小时，默认 2.0)。
   - `t_plateau`: 谷氨酸通量达到平台的时间 (小时，根据 `t_on` 和 `ramp_hours` 自动计算)。
   - `t_off`: 谷氨酸通量开始下降的时间 (小时，默认 34.0)。
+  - `--param-file`: 包含扩散参数的 JSON 文件的路径。文件中的参数将覆盖默认值，命令行参数将覆盖文件中的参数。
 
 ## 2. 模型模块说明
 
@@ -82,6 +83,7 @@
     - `k_deg`: T7降解速率常数
   - **辅助方法**:
     - `quick_diagnose()`: 用于快速诊断在典型条件下的表达与T7输出，帮助定位参数问题。
+  - `--param-file`: 包含AND门参数的 JSON 文件的路径。文件中的参数将覆盖默认值，命令行参数将覆盖文件中的参数。
 
 ### 2.2 glu_metabolism.py
 - **模型**: 谷氨酸生产和分泌的ODE模型 (已外部化参数)
@@ -127,8 +129,9 @@
     - `export_accum_suppression`: 积累抑制下的谷氨酸输出比例
     - `postshock_export_boost`: 热激后谷氨酸输出增强因子
     - `extracellular_clearance_rate`: 细胞外谷氨酸清除率
-    - `export_decay_rate`: 谷氨酸输出衰减率
-    - `Glu_target`: 谷氨酸目标浓度
+  - `export_decay_rate`: 谷氨酸输出衰减率
+  - `Glu_target`: 谷氨酸目标浓度
+  - `--param-file`: 包含谷氨酸代谢参数的 JSON 文件的路径。文件中的参数将覆盖默认值，命令行参数将覆盖文件中的参数。
 
 ### 2.3 diffusion_pk.py
 - **模型**: 扩散与药代动力学模块 (已外部化参数)

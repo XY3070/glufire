@@ -2,6 +2,7 @@ import click
 import numpy as np
 import os
 from pathlib import Path
+import json # Import the json module
 
 from glufire.models.and_gate import SimpleANDGate
 from glufire.models.diffusion_pk_neurotoxicity import simulate_three_comp_pk, assess_neurotoxicity, PKParams, ToxicityThresholds, trapezoid_flux, _plot_and_save
@@ -22,11 +23,39 @@ def main():
 @click.option('--diagnose', is_flag=True, help='Run quick diagnosis and print T7 activity for predefined conditions.')
 @click.option('--plot', is_flag=True, help='Generate and show comprehensive analysis plot.')
 @click.option('--save-path', type=click.Path(), help='Path to save the plot (e.g., results/and_gate_analysis.png).')
-def and_gate(o2, temp, diagnose, plot, save_path):
+@click.option('--param-file', type=click.Path(exists=True), help='Path to a JSON file containing AND-gate parameters.')
+def and_gate(o2, temp, diagnose, plot, save_path, param_file):
     """
     Simulate the AND-gate logic model.
     """
     click.echo(f"Running AND-gate simulation with O2={o2}%, Temp={temp}°C")
+
+    params_from_file = {}
+    if param_file:
+        with open(param_file, 'r') as f:
+            params_from_file = json.load(f)
+
+    # Default parameters
+    default_params = {
+        'o2': 1.0,
+        'temp': 42.0,
+    }
+
+    # Merge parameters: default_params < params_from_file < command_line_args
+    merged_params = default_params.copy()
+    merged_params.update(params_from_file)
+
+    cmd_line_args = {
+        'o2': o2, 'temp': temp
+    }
+    for key, value in cmd_line_args.items():
+        if value is not None:
+            merged_params[key] = value
+
+    # Assign merged parameters to local variables
+    o2 = merged_params['o2']
+    temp = merged_params['temp']
+
     gate = SimpleANDGate()
 
     if diagnose:
@@ -50,11 +79,50 @@ def and_gate(o2, temp, diagnose, plot, save_path):
 @click.option('--t7-high', default=3000.0, type=float, help='High T7 activity during heat shock periods.')
 @click.option('--plot', is_flag=True, help='Generate and show plots for glutamate metabolism.')
 @click.option('--save-path', type=click.Path(), help='Path to save the plot (e.g., results/glu_metabolism_analysis.png).')
-def glu_metabolism(strain, t_end, dt, shock_start, shock_duration, t7_low, t7_high, plot, save_path):
+@click.option('--param-file', type=click.Path(exists=True), help='Path to a JSON file containing glutamate metabolism parameters.')
+def glu_metabolism(strain, t_end, dt, shock_start, shock_duration, t7_low, t7_high, plot, save_path, param_file):
     """
     Simulate the glutamate metabolism model.
     """
     click.echo(f"Running glutamate metabolism simulation for {strain} strain...")
+
+    params_from_file = {}
+    if param_file:
+        with open(param_file, 'r') as f:
+            params_from_file = json.load(f)
+
+    # Default parameters
+    default_params = {
+        'strain': 'engineered',
+        't_end': 48.0,
+        'dt': 0.1,
+        'shock_start': 8.0,
+        'shock_duration': 4.0,
+        't7_low': 50.0,
+        't7_high': 3000.0,
+    }
+
+    # Merge parameters: default_params < params_from_file < command_line_args
+    merged_params = default_params.copy()
+    merged_params.update(params_from_file)
+
+    cmd_line_args = {
+        'strain': strain, 't_end': t_end, 'dt': dt, 'shock_start': shock_start,
+        'shock_duration': shock_duration, 't7_low': t7_low, 't7_high': t7_high
+    }
+    for key, value in cmd_line_args.items():
+        if value is not None:
+            merged_params[key] = value
+
+    # Assign merged parameters to local variables
+    strain = merged_params['strain']
+    t_end = merged_params['t_end']
+    dt = merged_params['dt']
+    shock_start = merged_params['shock_start']
+    shock_duration = merged_params['shock_duration']
+    t7_low = merged_params['t7_low']
+    t7_high = merged_params['t7_high']
+
     model = GluModel(strain_type=strain)
 
     heat_shock_protocol = create_heat_shock_protocol(
@@ -124,25 +192,75 @@ def glu_metabolism(strain, t_end, dt, shock_start, shock_duration, t7_low, t7_hi
 
 
 @main.command()
-@click.option('--hours', default=48.0, type=float, help='Total simulation horizon (h).')
-@click.option('--dt', default=0.1, type=float, help='Time step for output grid (h).')
-@click.option('--baseline', default=50.0, type=float, help='Baseline concentration for all compartments (µM).')
-@click.option('--tumor-init-mM', default=30.0, type=float, help='Initial tumor glutamate (mM), worst-case.')
-@click.option('--k-bt', default=1e-3, type=float, help='Blood<->tumor exchange (h^-1).')
-@click.option('--k-b-clr', default=0.5, type=float, help='Plasma clearance (h^-1).')
-@click.option('--k-t-clr', default=0.05, type=float, help='Tumor clearance (h^-1).')
-@click.option('--secretion-peak', default=0.0, type=float, help='Tumor secretion peak (µmol/h). 0 disables.')
-@click.option('--t-on', default=8.0, type=float, help='Secretion start (h).')
-@click.option('--t-off', default=34.0, type=float, help='Secretion end (h).')
-@click.option('--ramp', default=2.0, type=float, help='Ramp duration for on/off (h).')
+@click.option('--hours', default=None, type=float, help='Total simulation horizon (h).')
+@click.option('--dt', default=None, type=float, help='Time step for output grid (h).')
+@click.option('--baseline', default=None, type=float, help='Baseline concentration for all compartments (µM).')
+@click.option('--tumor-init-mM', default=None, type=float, help='Initial tumor glutamate (mM), worst-case.')
+@click.option('--k-bt', default=None, type=float, help='Blood<->tumor exchange (h^-1).')
+@click.option('--k-b-clr', default=None, type=float, help='Plasma clearance (h^-1).')
+@click.option('--k-t-clr', default=None, type=float, help='Tumor clearance (h^-1).')
+@click.option('--secretion-peak', default=None, type=float, help='Tumor secretion peak (µmol/h). 0 disables.')
+@click.option('--t-on', default=None, type=float, help='Secretion start (h).')
+@click.option('--t-off', default=None, type=float, help='Secretion end (h).')
+@click.option('--ramp', default=None, type=float, help='Ramp duration for on/off (h).')
 @click.option('--plot', is_flag=True, help='Generate and show neurotoxicity plot.')
 @click.option('--save-path', type=click.Path(), help='Path to save the plot (e.g., results/neurotoxicity_analysis.png).')
-@click.option('--title', default='Plasma Glutamate vs Neurotoxicity Thresholds', help='Figure title.')
-def diffusion(hours, dt, baseline, tumor_init_mM, k_bt, k_b_clr, k_t_clr, secretion_peak, t_on, t_off, ramp, plot, save_path, title):
+@click.option('--title', default=None, help='Figure title.')
+@click.option('--param-file', type=click.Path(exists=True), help='Path to a JSON file containing diffusion parameters.')
+def diffusion(hours, dt, baseline, tumor_init_mM, k_bt, k_b_clr, k_t_clr, secretion_peak, t_on, t_off, ramp, plot, save_path, title, param_file):
     """
     Simulate the diffusion and neurotoxicity model.
     """
     click.echo("Running diffusion and neurotoxicity simulation...")
+
+    params_from_file = {}
+    if param_file:
+        with open(param_file, 'r') as f:
+            params_from_file = json.load(f)
+
+    # Default parameters
+    default_params = {
+        'hours': 48.0,
+        'dt': 0.1,
+        'baseline': 50.0,
+        'tumor_init_mM': 30.0,
+        'k_bt': 1e-3,
+        'k_b_clr': 0.5,
+        'k_t_clr': 0.05,
+        'secretion_peak': 0.0,
+        't_on': 8.0,
+        't_off': 34.0,
+        'ramp': 2.0,
+        'title': 'Plasma Glutamate vs Neurotoxicity Thresholds'
+    }
+
+    # Merge parameters: default_params < params_from_file < command_line_args
+    # Command-line arguments that are not None override file parameters, which override defaults
+    merged_params = default_params.copy()
+    merged_params.update(params_from_file)
+
+    cmd_line_args = {
+        'hours': hours, 'dt': dt, 'baseline': baseline, 'tumor_init_mM': tumor_init_mM,
+        'k_bt': k_bt, 'k_b_clr': k_b_clr, 'k_t_clr': k_t_clr, 'secretion_peak': secretion_peak,
+        't_on': t_on, 't_off': t_off, 'ramp': ramp, 'title': title
+    }
+    for key, value in cmd_line_args.items():
+        if value is not None:
+            merged_params[key] = value
+
+    # Assign merged parameters to local variables
+    hours = merged_params['hours']
+    dt = merged_params['dt']
+    baseline = merged_params['baseline']
+    tumor_init_mM = merged_params['tumor_init_mM']
+    k_bt = merged_params['k_bt']
+    k_b_clr = merged_params['k_b_clr']
+    k_t_clr = merged_params['k_t_clr']
+    secretion_peak = merged_params['secretion_peak']
+    t_on = merged_params['t_on']
+    t_off = merged_params['t_off']
+    ramp = merged_params['ramp']
+    title = merged_params['title']
 
     sim_hours = hours
     baseline_uM = baseline

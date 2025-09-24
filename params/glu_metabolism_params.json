@@ -1,0 +1,9 @@
+{
+    "strain": "engineered",
+    "t_end": 48.0,
+    "dt": 0.1,
+    "shock_start": 8.0,
+    "shock_duration": 4.0,
+    "t7_low": 50.0,
+    "t7_high": 3000.0
+}

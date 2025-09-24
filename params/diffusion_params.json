@@ -1,0 +1,14 @@
+{
+    "hours": 48.0,
+    "dt": 0.1,
+    "baseline": 50.0,
+    "tumor_init_mM": 30.0,
+    "k_bt": 0.001,
+    "k_b_clr": 0.5,
+    "k_t_clr": 0.05,
+    "secretion_peak": 0.0,
+    "t_on": 8.0,
+    "t_off": 34.0,
+    "ramp": 2.0,
+    "title": "Plasma Glutamate vs Neurotoxicity Thresholds"
+}
