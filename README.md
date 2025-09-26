@@ -3,12 +3,10 @@
 ## ✨ Key Features
 
 - **Precise AND Gate Logic**: Simulates T7 activity based on oxygen (1% O2) and temperature (42°C) conditions, demonstrating high T7 activity under hypoxia and hyperthermia, and low T7 activity under normoxia and physiological temperature.
-- **Modular Design**: The codebase is structured into three core physical models and an integrated model, promoting clarity, understanding, and extensibility.
+- **Modular Design**: The codebase is structured into three core physical models, promoting clarity, understanding, and extensibility.
     - `models/and_gate.py`: Environmental response AND gate logic.
     - `models/glu_metabolism.py`: Glutamate production and secretion model.
-    - `models/diffusion_pk.py`: Multi-compartment pharmacokinetic and tumor diffusion model.
-    - `models/integrated_model.py`: Integrated therapeutic model combining the above modules.
-    - `models/pk_toxicity.py`: Neurotoxicity assessment module based on a three-compartment pharmacokinetic model.
+    - `models/diffusion_pk_neurotoxicity.py`: Multi-compartment pharmacokinetic and tumor diffusion model, including neurotoxicity assessment.
 - **Therapeutic Efficacy**:
     - **Control Group**: Low T7 activity (637 AU) leads to minimal glutamate (0.001 mM), resulting in no ferroptosis and normal tumor growth.
     - **Therapy Group**: High T7 activity (1217 AU) drives significant glutamate production (0.362 mM), leading to a ferroptosis rate of 2.5 /hr and substantial tumor reduction.
@@ -108,7 +106,7 @@ This subcommand simulates the diffusion and pharmacokinetic behavior of glutamat
 
 -   **Function**: Simulates the distribution of glutamate in different compartments and assesses potential neurotoxicity.
 -   **Options**:
-    -   `--hours <float>`: Total simulation time in hours (default: 24.0).
+    -   `--hours <float>`: Total simulation time in hours (default: 48.0).
     -   `--dt <float>`: Time step for the simulation (default: 0.1).
     -   `--param-file <path>`: Path to a JSON file containing custom parameters for the diffusion model. Parameters in this file will override default values.
 -   **Example Run**:
@@ -123,13 +121,28 @@ This subcommand models the glutamate production and secretion by engineered cell
 
 -   **Function**: Simulates the metabolic processes leading to glutamate synthesis and release.
 -   **Options**:
-    -   `--strain <str>`: Specifies the bacterial strain used in the simulation (default: "MG1655").
-    -   `--t-end <float>`: End time for the simulation in hours (default: 24.0).
+    -   `--strain <str>`: Specifies the bacterial strain used in the simulation (default: "engineered", options: "engineered", "wildtype").
+    -   `--t-end <float>`: End time for the simulation in hours (default: 48.0).
     -   `--param-file <path>`: Path to a JSON file containing custom parameters for the glutamate metabolism model. Parameters in this file will override default values.
 -   **Example Run**:
     ```bash
     glufire glu_metabolism --strain "BL21" --t-end 36
     glufire glu_metabolism --param-file params/glu_metabolism_params.json
+    ```
+
+### `diffusion`
+
+This subcommand simulates the diffusion and pharmacokinetic behavior of glutamate, including neurotoxicity assessment.
+
+-   **Function**: Simulates the distribution of glutamate in different compartments and assesses potential neurotoxicity.
+-   **Options**:
+    -   `--hours <float>`: Total simulation time in hours (default: 48.0).
+    -   `--dt <float>`: Time step for the simulation (default: 0.1).
+    -   `--param-file <path>`: Path to a JSON file containing custom parameters for the diffusion model. Parameters in this file will override default values.
+-   **Example Run**:
+    ```bash
+    glufire diffusion --hours 48 --dt 0.05
+    glufire diffusion --param-file params/diffusion_params.json
     ```
 
 ### `and_gate`
@@ -211,17 +224,6 @@ This project comprises several interconnected models that simulate different asp
 -   **Inputs**: Glutamate secretion rates from the `glu_metabolism` model, physiological parameters, and diffusion coefficients.
 -   **Outputs**: Glutamate concentrations in various compartments over time, and a neurotoxicity index.
 
-### `integrated_model.py`
-
--   **Description**: This model serves as the central integration point, combining the outputs and dynamics of the `and_gate`, `glu_metabolism`, and `diffusion_pk_neurotoxicity` models. It simulates the complete therapeutic process, from environmental sensing and T7 activation to glutamate production, distribution, and its impact on tumor growth and neurotoxicity.
--   **Inputs**: Outputs from the individual models and overall system parameters.
--   **Outputs**: Comprehensive simulation results including tumor volume changes, glutamate levels in all compartments, and overall therapeutic efficacy.
-
-### `pk_toxicity.py`
-
--   **Description**: This module specifically focuses on the pharmacokinetic and toxicity aspects, often used as a standalone component for detailed neurotoxicity assessment. It utilizes a three-compartment model to track glutamate distribution and predict potential adverse effects on the central nervous system.
--   **Inputs**: Glutamate input rates and pharmacokinetic parameters.
--   **Outputs**: Glutamate concentrations in plasma, brain, and other compartments, along with neurotoxicity indicators.
 
 ## ✨ Core Innovations
 
