@@ -149,10 +149,10 @@ def glu_metabolism(strain, t_end, dt, shock_start, shock_duration, t7_low, t7_hi
         fig.suptitle(f'{strain.capitalize()} Strain Glutamate Metabolism Analysis', fontsize=16, fontweight='bold')
 
         # Intracellular glutamate
-        axes[0].plot(t, solution[:, 4], 'b-', linewidth=2, label='Intracellular Glu')
-        axes[0].axhline(y=45, color='orange', linestyle=':', alpha=0.7, label='Target>=45mM')
+        axes[0].plot(t, solution[:, 4], color='#FF8200', linewidth=2, label='Intracellular Glu')
+        axes[0].axhline(y=45, color='#A0522D', linestyle=':', alpha=0.7, label='Target>=45mM')
         axes[0].axhline(y=20, color='green', linestyle=':', alpha=0.7, label='Recovery~20mM')
-        axes[0].axvline(x=shock_start, color='orange', linestyle='--', alpha=0.8, linewidth=1.5, label='Heat Shock Start')
+        axes[0].axvline(x=shock_start, color='#A0522D', linestyle='--', alpha=0.8, linewidth=1.5, label='Heat Shock Start')
         axes[0].set_xlabel('Time (h)')
         axes[0].set_ylabel('Intracellular Glu (mM)')
         axes[0].set_title('Intracellular Glutamate Dynamics')
@@ -160,9 +160,9 @@ def glu_metabolism(strain, t_end, dt, shock_start, shock_duration, t7_low, t7_hi
         axes[0].grid(True, alpha=0.3)
 
         # Extracellular glutamate
-        axes[1].plot(t, solution[:, 7], 'r-', linewidth=2, label='Extracellular Glu')
-        axes[1].axhline(y=30, color='orange', linestyle=':', alpha=0.7, label='Target>=30mM')
-        axes[1].axvline(x=shock_start, color='orange', linestyle='--', alpha=0.8, linewidth=1.5, label='Heat Shock Start')
+        axes[1].plot(t, solution[:, 7], color='#515B87', linewidth=2, label='Extracellular Glu')
+        axes[1].axhline(y=30, color='#A0522D', linestyle=':', alpha=0.7, label='Target>=30mM')
+        axes[1].axvline(x=shock_start, color='#A0522D', linestyle='--', alpha=0.8, linewidth=1.5, label='Heat Shock Start')
         axes[1].set_xlabel('Time (h)')
         axes[1].set_ylabel('Extracellular Glu (mM)')
         axes[1].set_title('Extracellular Glutamate Dynamics')
@@ -170,8 +170,8 @@ def glu_metabolism(strain, t_end, dt, shock_start, shock_duration, t7_low, t7_hi
         axes[1].grid(True, alpha=0.3)
 
         # Key metabolites
-        axes[2].plot(t, solution[:, 3], 'purple', linewidth=2, label='AKG')
-        axes[2].plot(t, solution[:, 5], 'blue', linewidth=2, label='NADPH')
+        axes[2].plot(t, solution[:, 3], color='#FF8200', linewidth=2, label='AKG')
+        axes[2].plot(t, solution[:, 5], color='#515B87', linewidth=2, label='NADPH')
         axes[2].set_xlabel('Time (h)')
         axes[2].set_ylabel('Concentration (mM)')
         axes[2].set_title('Key Metabolites')
@@ -195,7 +195,7 @@ def glu_metabolism(strain, t_end, dt, shock_start, shock_duration, t7_low, t7_hi
 @click.option('--hours', default=None, type=float, help='Total simulation horizon (h).')
 @click.option('--dt', default=None, type=float, help='Time step for output grid (h).')
 @click.option('--baseline', default=None, type=float, help='Baseline concentration for all compartments (µM).')
-@click.option('--tumor-init-mM', default=None, type=float, help='Initial tumor glutamate (mM), worst-case.')
+@click.option('--tumor-init-mm', default=None, type=float, help='Initial tumor glutamate (mM), worst-case.')
 @click.option('--k-bt', default=None, type=float, help='Blood<->tumor exchange (h^-1).')
 @click.option('--k-b-clr', default=None, type=float, help='Plasma clearance (h^-1).')
 @click.option('--k-t-clr', default=None, type=float, help='Tumor clearance (h^-1).')
@@ -207,7 +207,7 @@ def glu_metabolism(strain, t_end, dt, shock_start, shock_duration, t7_low, t7_hi
 @click.option('--save-path', type=click.Path(), help='Path to save the plot (e.g., results/neurotoxicity_analysis.png).')
 @click.option('--title', default=None, help='Figure title.')
 @click.option('--param-file', type=click.Path(exists=True), help='Path to a JSON file containing diffusion parameters.')
-def diffusion(hours, dt, baseline, tumor_init_mM, k_bt, k_b_clr, k_t_clr, secretion_peak, t_on, t_off, ramp, plot, save_path, title, param_file):
+def diffusion(hours, dt, baseline, tumor_init_mm, k_bt, k_b_clr, k_t_clr, secretion_peak, t_on, t_off, ramp, plot, save_path, title, param_file):
     """
     Simulate the diffusion and neurotoxicity model.
     """
@@ -223,7 +223,7 @@ def diffusion(hours, dt, baseline, tumor_init_mM, k_bt, k_b_clr, k_t_clr, secret
         'hours': 48.0,
         'dt': 0.1,
         'baseline': 50.0,
-        'tumor_init_mM': 30.0,
+        'tumor_init_mm': 30.0,
         'k_bt': 1e-3,
         'k_b_clr': 0.5,
         'k_t_clr': 0.05,
@@ -240,7 +240,7 @@ def diffusion(hours, dt, baseline, tumor_init_mM, k_bt, k_b_clr, k_t_clr, secret
     merged_params.update(params_from_file)
 
     cmd_line_args = {
-        'hours': hours, 'dt': dt, 'baseline': baseline, 'tumor_init_mM': tumor_init_mM,
+        'hours': hours, 'dt': dt, 'baseline': baseline, 'tumor_init_mm': tumor_init_mm,
         'k_bt': k_bt, 'k_b_clr': k_b_clr, 'k_t_clr': k_t_clr, 'secretion_peak': secretion_peak,
         't_on': t_on, 't_off': t_off, 'ramp': ramp, 'title': title
     }
@@ -252,7 +252,7 @@ def diffusion(hours, dt, baseline, tumor_init_mM, k_bt, k_b_clr, k_t_clr, secret
     hours = merged_params['hours']
     dt = merged_params['dt']
     baseline = merged_params['baseline']
-    tumor_init_mM = merged_params['tumor_init_mM']
+    tumor_init_mm = merged_params['tumor_init_mm']
     k_bt = merged_params['k_bt']
     k_b_clr = merged_params['k_b_clr']
     k_t_clr = merged_params['k_t_clr']
@@ -264,7 +264,7 @@ def diffusion(hours, dt, baseline, tumor_init_mM, k_bt, k_b_clr, k_t_clr, secret
 
     sim_hours = hours
     baseline_uM = baseline
-    Ct0_uM = tumor_init_mM * 1000.0  # convert mM -> µM
+    Ct0_uM = tumor_init_mm * 1000.0  # convert mM -> µM
 
     t_h = np.linspace(0.0, sim_hours, int(sim_hours / dt) + 1)
 
