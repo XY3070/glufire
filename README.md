@@ -37,10 +37,32 @@ cd glufire
 
 ### 2. Set Up the Environment with `uv`
 
+Before you start, please ensure that you have downloaded and activated uv. The uv official document is [here](https://docs.astral.sh/uv/).
+
+Create a virtual environment under current directory:
+
+```bash
+uv venv
+```
+
+Activate your venv:
+
+```bash
+# Windows
+.venv\Scripts\activate
+```
+
+```bash
+# MacOS / Linux
+source .venv/bin/activate
+```  
+
+Now the project has been added to your PATH (for this terminal).
+
 Install the project and its dependencies using `uv`:
 
 ```bash
-uv pip install .
+uv pip install -e .
 ```
 
 ### 3. Run a Simulation
